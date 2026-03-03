@@ -24,11 +24,25 @@ export function removeNodeById(root: NoteNode, id: string): boolean {
   return false;
 }
 
-/** Insert a node as a child of the node with the given parentId. Returns true if inserted. */
-export function insertNode(root: NoteNode, parentId: string, node: NoteNode): boolean {
+/**
+ * Insert a node as a child of the node with the given parentId.
+ * If index is provided, inserts at that position; otherwise appends.
+ */
+export function insertNode(
+  root: NoteNode,
+  parentId: string,
+  node: NoteNode,
+  index?: number,
+): boolean {
   const parent = findNodeById(root, parentId);
   if (!parent) return false;
-  parent.children.push(node);
+  if (index === undefined) {
+    parent.children.push(node);
+    return true;
+  }
+
+  const clampedIndex = Math.max(0, Math.min(index, parent.children.length));
+  parent.children.splice(clampedIndex, 0, node);
   return true;
 }
 

@@ -20,7 +20,7 @@ Treenote is a notes management application that organizes notes in a hierarchica
 - Users can create child notes under any existing note
 - Notes persist between sessions
 - User can change parent of each node by drag-and-drop
-
+- User can change order of child nodes by drag-and-drop
 ### User Interface
 
 - Split-panel layout with tree view and editor

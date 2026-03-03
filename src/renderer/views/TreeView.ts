@@ -14,6 +14,7 @@ export class TreeView extends View {
   private nodeElements: Map<string, HTMLElement> = new Map();
   private draggedNodeId: string | null = null;
   private dropTargetId: string | null = null;
+  private dropPosition: 'inside' | 'before' | 'after' | null = null;
   private dragExpandTimer: ReturnType<typeof setTimeout> | null = null;
   private activeModalEl: HTMLElement | null = null;
 
@@ -114,13 +115,14 @@ export class TreeView extends View {
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
 
-      if (this.dropTargetId !== node.id) {
+      const position = this.getDropPosition(itemEl, e.clientY);
+      if (this.dropTargetId !== node.id || this.dropPosition !== position) {
         this.clearDropTarget();
         this.dropTargetId = node.id;
-        itemEl.addClass('tree-view__item--drop-target');
+        this.dropPosition = position;
+        this.applyDropTargetClass(itemEl, position);
 
-        // Auto-expand collapsed nodes after hovering 600ms
-        if (node.children.length > 0 && !node.isExpanded) {
+        if (position === 'inside' && node.children.length > 0 && !node.isExpanded) {
           this.dragExpandTimer = setTimeout(() => {
             this.toggleExpand(node.id);
           }, 600);
@@ -142,15 +144,38 @@ export class TreeView extends View {
       e.stopPropagation();
       if (!this.draggedNodeId || this.draggedNodeId === node.id) return;
 
-      const draggedNode = this.app.vault.findNode(this.draggedNodeId);
-      if (draggedNode && draggedNode.parentId === node.id) {
-        this.cleanupDrag();
-        return;
+      const movedId = this.draggedNodeId;
+      const position = this.dropTargetId === node.id ? this.dropPosition : 'inside';
+
+      let success = false;
+      if (position === 'inside') {
+        const draggedNode = this.app.vault.findNode(movedId);
+        if (draggedNode && draggedNode.parentId === node.id) {
+          this.cleanupDrag();
+          return;
+        }
+        node.isExpanded = true;
+        success = this.app.vault.moveNote(movedId, node.id);
+      } else {
+        const parentId = node.parentId;
+        if (!parentId) {
+          this.cleanupDrag();
+          return;
+        }
+        const parent = this.app.vault.findNode(parentId);
+        if (!parent) {
+          this.cleanupDrag();
+          return;
+        }
+        const targetNodeIndex = parent.children.findIndex((child) => child.id === node.id);
+        if (targetNodeIndex < 0) {
+          this.cleanupDrag();
+          return;
+        }
+        const targetIndex = position === 'before' ? targetNodeIndex : targetNodeIndex + 1;
+        success = this.app.vault.moveNote(movedId, parentId, targetIndex);
       }
 
-      const movedId = this.draggedNodeId;
-      node.isExpanded = true;
-      const success = this.app.vault.moveNote(movedId, node.id);
       if (success) {
         this.selectNode(movedId);
       }
@@ -315,13 +340,37 @@ export class TreeView extends View {
   private clearDropTarget(): void {
     if (this.dropTargetId) {
       const el = this.nodeElements.get(this.dropTargetId);
-      if (el) el.removeClass('tree-view__item--drop-target');
+      if (el) {
+        el.removeClass('tree-view__item--drop-target');
+        el.removeClass('tree-view__item--drop-before');
+        el.removeClass('tree-view__item--drop-after');
+      }
       this.dropTargetId = null;
+      this.dropPosition = null;
     }
     if (this.dragExpandTimer) {
       clearTimeout(this.dragExpandTimer);
       this.dragExpandTimer = null;
     }
+  }
+
+  private applyDropTargetClass(itemEl: HTMLElement, position: 'inside' | 'before' | 'after'): void {
+    if (position === 'inside') {
+      itemEl.addClass('tree-view__item--drop-target');
+      return;
+    }
+    itemEl.addClass(position === 'before' ? 'tree-view__item--drop-before' : 'tree-view__item--drop-after');
+  }
+
+  private getDropPosition(itemEl: HTMLElement, clientY: number): 'inside' | 'before' | 'after' {
+    const rect = itemEl.getBoundingClientRect();
+    if (rect.height <= 0) return 'inside';
+
+    const relativeY = clientY - rect.top;
+    const edgeThreshold = rect.height * 0.25;
+    if (relativeY <= edgeThreshold) return 'before';
+    if (relativeY >= rect.height - edgeThreshold) return 'after';
+    return 'inside';
   }
 
   private cleanupDrag(): void {

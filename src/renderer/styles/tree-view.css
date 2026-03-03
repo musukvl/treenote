@@ -108,6 +108,14 @@
   outline-offset: -2px;
 }
 
+.tree-view__item--drop-before {
+  box-shadow: inset 0 2px 0 0 var(--color-accent);
+}
+
+.tree-view__item--drop-after {
+  box-shadow: inset 0 -2px 0 0 var(--color-accent);
+}
+
 .tree-view__modal-overlay {
   position: fixed;
   inset: 0;

@@ -107,23 +107,43 @@ export class Vault extends Component {
     return removed;
   }
 
-  moveNote(nodeId: string, newParentId: string): boolean {
+  moveNote(nodeId: string, newParentId: string, newIndex?: number): boolean {
     if (!this._data) return false;
     const node = this.findNode(nodeId);
     if (!node) return false;
     if (this.isDescendant(nodeId, newParentId)) return false;
 
+    const previousParentId = node.parentId;
+    const previousParent = previousParentId ? this.findNode(previousParentId) : null;
+    const originalIndex = previousParent
+      ? previousParent.children.findIndex((child) => child.id === nodeId)
+      : -1;
+
     const removed = removeNodeById(this._data.root, nodeId);
     if (!removed) return false;
 
-    const success = insertNode(this._data.root, newParentId, node);
+    let targetIndex = newIndex;
+    if (targetIndex !== undefined && previousParentId === newParentId && originalIndex >= 0) {
+      if (targetIndex > originalIndex) {
+        targetIndex -= 1;
+      }
+    }
+
+    const success = insertNode(this._data.root, newParentId, node, targetIndex);
     if (success) {
       node.parentId = newParentId;
+      const parent = this.findNode(newParentId);
+      const finalIndex = parent ? parent.children.findIndex((child) => child.id === nodeId) : undefined;
       this.markDirty();
-      this.app.events.trigger('note-moved', nodeId, newParentId);
+      this.app.events.trigger('note-moved', nodeId, newParentId, finalIndex);
       this.app.events.trigger('tree-changed');
+      return true;
     }
-    return success;
+
+    if (previousParentId) {
+      insertNode(this._data.root, previousParentId, node);
+    }
+    return false;
   }
 
   findNode(nodeId: string): NoteNode | null {

@@ -7,7 +7,7 @@ export interface TreeNoteEvents {
   'note-deleted': [nodeId: string];
   'note-renamed': [nodeId: string, newName: string];
   'note-content-changed': [nodeId: string, content: string];
-  'note-moved': [nodeId: string, newParentId: string];
+  'note-moved': [nodeId: string, newParentId: string, newIndex?: number];
   'active-note-change': [node: NoteNode | null];
   'tree-changed': [];
   'data-loaded': [data: TreeData];

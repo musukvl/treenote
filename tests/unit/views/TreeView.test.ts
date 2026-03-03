@@ -102,6 +102,9 @@ function makeDragEvent(type: string, opts: Partial<DragEventInit> = {}): DragEve
   // jsdom doesn't fully support DragEvent; use Event and attach dataTransfer
   const event = new Event(type, { bubbles: true, cancelable: true, ...opts });
   Object.defineProperty(event, 'dataTransfer', { value: dt });
+  if (typeof opts.clientY === 'number') {
+    Object.defineProperty(event, 'clientY', { value: opts.clientY });
+  }
   return event as unknown as DragEvent;
 }
 
@@ -188,10 +191,42 @@ describe('TreeView drag-and-drop', () => {
     // Drag B onto A
     getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
     const itemA = getItemEl('a');
-    itemA.dispatchEvent(makeDragEvent('dragover'));
+    itemA.dispatchEvent(makeDragEvent('dragover', { clientY: 12 }));
     itemA.dispatchEvent(makeDragEvent('drop'));
 
     expect(vault.moveNote).toHaveBeenCalledWith('b', 'a');
+  });
+
+  it('should reorder before sibling on top-edge drop', () => {
+    const { vault } = mockApp as { vault: { moveNote: ReturnType<typeof vi.fn> } };
+
+    const itemA = getItemEl('a');
+    Object.defineProperty(itemA, 'getBoundingClientRect', {
+      value: () => ({ top: 100, height: 40, width: 0, left: 0, right: 0, bottom: 140, x: 0, y: 100, toJSON: () => ({}) }),
+    });
+
+    getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
+    itemA.dispatchEvent(makeDragEvent('dragover', { clientY: 104 }));
+    expect(itemA.classList.contains('tree-view__item--drop-before')).toBe(true);
+    itemA.dispatchEvent(makeDragEvent('drop'));
+
+    expect(vault.moveNote).toHaveBeenCalledWith('b', 'root', 0);
+  });
+
+  it('should reorder after sibling on bottom-edge drop', () => {
+    const { vault } = mockApp as { vault: { moveNote: ReturnType<typeof vi.fn> } };
+
+    const itemA = getItemEl('a');
+    Object.defineProperty(itemA, 'getBoundingClientRect', {
+      value: () => ({ top: 100, height: 40, width: 0, left: 0, right: 0, bottom: 140, x: 0, y: 100, toJSON: () => ({}) }),
+    });
+
+    getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
+    itemA.dispatchEvent(makeDragEvent('dragover', { clientY: 138 }));
+    expect(itemA.classList.contains('tree-view__item--drop-after')).toBe(true);
+    itemA.dispatchEvent(makeDragEvent('drop'));
+
+    expect(vault.moveNote).toHaveBeenCalledWith('b', 'root', 1);
   });
 
   it('should not call vault.moveNote when dropping on self', () => {
@@ -226,7 +261,7 @@ describe('TreeView drag-and-drop', () => {
 
     // Drag B over collapsed A
     getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
-    getItemEl('a').dispatchEvent(makeDragEvent('dragover'));
+    getItemEl('a').dispatchEvent(makeDragEvent('dragover', { clientY: 12 }));
 
     // Before 600ms, A should still be collapsed
     const vaultTyped = mockApp as { vault: { findNode: ReturnType<typeof vi.fn> } };
@@ -248,7 +283,7 @@ describe('TreeView drag-and-drop', () => {
     // Drag A1 onto B
     getItemEl('a1').dispatchEvent(makeDragEvent('dragstart'));
     const itemB = getItemEl('b');
-    itemB.dispatchEvent(makeDragEvent('dragover'));
+    itemB.dispatchEvent(makeDragEvent('dragover', { clientY: 12 }));
     itemB.dispatchEvent(makeDragEvent('drop'));
 
     expect(nodes.b.isExpanded).toBe(true);
@@ -260,7 +295,7 @@ describe('TreeView drag-and-drop', () => {
     // A1's parent is A — dragging A1 onto A should be a no-op
     getItemEl('a1').dispatchEvent(makeDragEvent('dragstart'));
     const itemA = getItemEl('a');
-    itemA.dispatchEvent(makeDragEvent('dragover'));
+    itemA.dispatchEvent(makeDragEvent('dragover', { clientY: 12 }));
     itemA.dispatchEvent(makeDragEvent('drop'));
 
     expect(vault.moveNote).not.toHaveBeenCalled();
