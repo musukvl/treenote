@@ -23,6 +23,15 @@ export class FileManager {
     this.filePath = filePath;
   }
 
+  /** Ensure target file exists on disk. */
+  async ensureFileExists(initialContent = ''): Promise<void> {
+    await this.ensureDirectory();
+    if (!existsSync(this.filePath)) {
+      await writeFile(this.filePath, initialContent, 'utf-8');
+      logger.info(`Created data file: ${this.filePath}`);
+    }
+  }
+
   /** Read the YAML file and return its contents as a JSON string. Returns null if file doesn't exist. */
   async read(): Promise<string | null> {
     if (!existsSync(this.filePath)) {

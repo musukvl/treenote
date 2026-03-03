@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron';
-import { join, dirname } from 'path';
+import { join, dirname, extname, resolve } from 'path';
 import { registerIpcHandlers } from './ipc-handlers';
 import { buildMenu } from './menu';
 import { FileManager } from './file-manager';
@@ -15,7 +15,36 @@ function getDataFilePath(): string {
   return join(exeDir, DATA_FILE_NAME);
 }
 
-function createWindow(): void {
+function parseCliDataFilePath(argv: string[]): string | null {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+
+    if (arg === '--file' || arg === '-f') {
+      const value = argv[i + 1];
+      if (!value) return null;
+      return resolve(value);
+    }
+
+    if (arg.startsWith('--file=')) {
+      const value = arg.slice('--file='.length);
+      if (!value) return null;
+      return resolve(value);
+    }
+
+    const extension = extname(arg).toLowerCase();
+    if (extension === '.yml' || extension === '.yaml') {
+      return resolve(arg);
+    }
+  }
+
+  return null;
+}
+
+function resolveDataFilePath(argv: string[]): string {
+  return parseCliDataFilePath(argv) ?? getDataFilePath();
+}
+
+async function createWindow(): Promise<void> {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -30,7 +59,10 @@ function createWindow(): void {
     title: 'TreeNote',
   });
 
-  const fileManager = new FileManager(getDataFilePath());
+  const filePath = resolveDataFilePath(process.argv);
+  const fileManager = new FileManager(filePath);
+  await fileManager.ensureFileExists();
+
   registerIpcHandlers(fileManager, mainWindow);
   buildMenu(mainWindow);
 
@@ -49,11 +81,11 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  void createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      void createWindow();
     }
   });
 });
