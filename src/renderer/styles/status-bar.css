@@ -1,0 +1,35 @@
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  height: var(--status-bar-height);
+  background: var(--color-bg-secondary);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.status-bar__save-status {
+  /* Default state */
+}
+
+.status-bar__save-status--saved {
+  color: var(--color-success);
+}
+
+.status-bar__save-status--unsaved {
+  color: var(--color-warning);
+}
+
+.status-bar__save-status--saving {
+  color: var(--color-text-secondary);
+}
+
+.status-bar__save-status--error {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.status-bar__note-count {
+  color: var(--color-text-muted);
+}

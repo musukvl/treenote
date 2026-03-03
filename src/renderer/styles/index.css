@@ -1,0 +1,8 @@
+@import './variables.css';
+@import './base.css';
+@import './layout.css';
+@import './tree-view.css';
+@import './editor-view.css';
+@import './search-view.css';
+@import './status-bar.css';
+@import './context-menu.css';
