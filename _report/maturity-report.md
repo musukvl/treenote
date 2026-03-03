@@ -2,60 +2,63 @@
 
 **Date:** 2026-03-03
 **Version Scanned:** 1.0.0
-**Total Source Code:** 2,159 lines across 19 TypeScript files
+**Total Source Code:** 2,362 lines across 25 TypeScript files (`src/**`)
 
 ---
 
-## Overall Score: 7.5 / 10 — Good
+## Overall Score: 8.1 / 10 — Good+ (Improved)
 
-| Dimension              | Score  |
-|------------------------|--------|
-| Architecture           | 8 / 10 |
-| Code Quality           | 8.5/10 |
-| Test Coverage          | 6 / 10 |
-| Documentation          | 7 / 10 |
-| Build & Release        | 8 / 10 |
-| Security               | 8.5/10 |
-| Performance            | 7.5/10 |
+| Dimension              | Score   |
+|------------------------|---------|
+| Architecture           | 7.8 / 10 |
+| Code Quality           | 8.8 / 10 |
+| Test Coverage          | 8.2 / 10 |
+| Documentation          | 7.0 / 10 |
+| Build & Release        | 8.0 / 10 |
+| Security               | 8.8 / 10 |
+| Performance            | 7.3 / 10 |
+
+**Summary of change since previous scan**
+- ✅ Fixed: mixed CJS/ESM import in `menu.ts` (C-1)
+- ✅ Fixed: blocking delete confirmation in `TreeView.ts` (C-2 / S-1)
+- ✅ Fixed: `Vault.ts` unit-test gap (T-1)
+- ✅ Fixed: missing `EditorView.ts` + `SearchView.ts` tests (T-2)
+- ✅ Fixed: missing main-process tests for `file-manager.ts` and `ipc-handlers.ts` (T-3)
+- ✅ Fixed: `TreeView.ts` architectural decomposition (A-1) and `App` singleton constraint removal (A-2)
+- ⚠️ Still open: CI pipeline (B-1), E2E tests (T-4), tree rendering scalability (P-1), minor style issue in IPC logger (C-3)
 
 ---
 
 ## 1. Architecture
 
 ### Strengths
-- Clean three-layer Electron split: `main` / `preload` / `renderer`.
-- Event-driven architecture with a properly typed `Events.ts` emitter.
-- Component base class (`Component.ts`) manages full lifecycle: init → render → update → unload.
-- Resource cleanup (event refs, DOM listeners, timers, child components) is consistent and correct.
-- Dependency injection through constructor parameters — no hidden singletons except `App`.
+- Clean Electron split remains intact: `main` / `preload` / `renderer`.
+- Typed event bus (`Events.ts`) and lifecycle-managed components remain robust.
+- Resource cleanup strategy remains consistent and reliable.
+- `TreeView` responsibilities are now separated: core view (`TreeView.ts`) + drag/drop controller + delete modal module.
+- `App` no longer enforces singleton state, reducing hidden global coupling and easing future composition/testing.
 
 ### Issues
 
 | ID  | Severity | File | Line | Issue |
 |-----|----------|------|------|-------|
-| A-1 | Medium   | `src/renderer/views/TreeView.ts` | 1–387 | File is 387 lines; mixes drag-and-drop, keyboard nav, context menu, and inline rename into a single class. Should be split into focused sub-components or handlers. |
-| A-2 | Low      | `src/renderer/core/App.ts` | 1–106 | Singleton `App` class holds all subsystem references. Fine at this scale, but will become a bottleneck if the app grows. Consider a service-locator or DI container. |
+| A-3 | Low      | `src/renderer/views/TreeView.ts` + `src/renderer/views/tree/*` | — | Further extraction opportunity remains for context-menu and keyboard-navigation handlers if feature scope grows. |
 
 ---
 
 ## 2. Code Quality
 
 ### Strengths
-- Full TypeScript strict mode enabled in both `tsconfig.node.json` and `tsconfig.web.json`.
-- ESLint enforces explicit return types, bans `any`, and warns on stray `console.*` calls.
-- No `TODO` / `FIXME` / `HACK` comments found anywhere.
-- All async operations are properly `await`ed or have error handlers.
-- No bare `catch` blocks — all errors are logged and re-thrown or recovered from.
-- No untyped `any` usage detected in source files.
-- Memory management is explicit: `Component.unload()` cleans up all refs, intervals, and child components.
+- TypeScript strict mode and lint discipline remain strong.
+- Error handling and cleanup quality remain above average.
+- `menu.ts` now uses consistent ES module imports.
+- Renderer delete flow now uses non-blocking async modal UX.
 
 ### Issues
 
 | ID  | Severity | File | Line | Issue |
 |-----|----------|------|------|-------|
-| C-1 | High     | `src/main/menu.ts` | 81 | `const { dialog } = require('electron')` mixes CommonJS `require` with ES6 `import` used everywhere else in the file. Move to a top-level `import { dialog } from 'electron'`. |
-| C-2 | Medium   | `src/renderer/views/TreeView.ts` | ~381 | Uses the browser's blocking `confirm()` for delete confirmation. This freezes the renderer process. Replace with a custom non-blocking modal. |
-| C-3 | Low      | `src/main/ipc-handlers.ts` | 54 | String concatenation `'[Renderer] ' + String(args[0] ?? '')` — minor style inconsistency; prefer a template literal. |
+| C-3 | Low      | `src/main/ipc-handlers.ts` | ~58–61 | String concatenation for renderer log prefix remains (`'[Renderer] ' + String(...)`). Prefer template literals for style consistency. |
 
 ---
 
@@ -65,104 +68,101 @@
 
 | Metric | Value |
 |--------|-------|
-| Test files | 7 |
-| Test LOC | 897 |
-| Source LOC (renderer only) | ~1,690 |
-| Rough test-to-source ratio | ~53 % |
+| Test files | 12 |
+| Test LOC | 1,648 |
+| Source LOC (`src/renderer`) | 1,943 |
+| Rough test-to-renderer-source ratio | ~85% |
+| Latest suite status | 120 tests passing |
 
 ### Coverage by Component
 
 | Component | Test File | Quality |
 |-----------|-----------|---------|
-| `Component.ts` | `Component.test.ts` (127 LOC) | Excellent — lifecycle, children, cleanup |
-| `Events.ts` | `Events.test.ts` (97 LOC) | Excellent — all methods, edge cases |
-| `debounce.ts` | `debounce.test.ts` (73 LOC) | Excellent — delay, reset, cancel |
-| `dom.ts` | `dom.test.ts` (108 LOC) | Excellent — creation, attributes, extensions |
-| `tree-utils.ts` | `tree-utils.test.ts` (135 LOC) | Excellent — all tree operations |
-| `NoteNode.ts` | `NoteNode.test.ts` (89 LOC) | Excellent — generation, welcome data |
-| `TreeView.ts` | `TreeView.test.ts` (268 LOC) | Good — drag-and-drop, keyboard, DOM events |
+| `Component.ts` | `Component.test.ts` | Excellent |
+| `Events.ts` | `Events.test.ts` | Excellent |
+| `debounce.ts` | `debounce.test.ts` | Excellent |
+| `dom.ts` | `dom.test.ts` | Excellent |
+| `tree-utils.ts` | `tree-utils.test.ts` | Excellent |
+| `NoteNode.ts` | `NoteNode.test.ts` | Excellent |
+| `TreeView.ts` | `TreeView.test.ts` | Good+ (includes drag/drop + delete modal flows) |
+| `Vault.ts` | `Vault.test.ts` | Good (core move/order scenarios covered) |
+| `EditorView.ts` | `EditorView.test.ts` | Good |
+| `SearchView.ts` | `SearchView.test.ts` | Good |
+| `file-manager.ts` | `file-manager.test.ts` | Good (happy paths + I/O errors) |
+| `ipc-handlers.ts` | `ipc-handlers.test.ts` | Good (channel registration + behaviors) |
 
-### Gaps
+### Remaining Gaps
 
 | ID  | Severity | Gap |
 |-----|----------|-----|
-| T-1 | High     | `Vault.ts` — the primary data persistence layer — has **no unit tests**. A bug here corrupts user data. |
-| T-2 | High     | `EditorView.ts` and `SearchView.ts` have **no tests**. |
-| T-3 | High     | Main process (`file-manager.ts`, `ipc-handlers.ts`) has **no tests**. File I/O errors can cause data loss. |
-| T-4 | Medium   | E2E test directory (`tests/e2e/`) exists and Playwright is installed, but **zero tests are written**. |
-| T-5 | Medium   | No integration tests covering multi-component workflows (e.g., create note → save → reload). |
-| T-6 | Low      | `Workspace.ts`, `HotkeyManager.ts`, `Logger.ts` have no tests. |
+| T-4 | Medium   | `tests/e2e/` still absent (Playwright configured but no scenarios). |
+| T-5 | Medium   | No explicit integration test for full flow (create → save → reload). |
+| T-6 | Low      | `Workspace.ts`, `HotkeyManager.ts`, `Logger.ts`, `menu.ts`, `main/index.ts` still untested. |
 
 ---
 
 ## 4. Documentation
 
 ### Strengths
-- `requirements.md` clearly describes the functional spec and compares to similar tools.
-- `AGENTS.md` explains the build-script conventions for AI agents.
-- TypeScript types serve as inline documentation across the codebase.
-- JSDoc comments on key functions in `Component.ts` and `Vault.ts`.
+- `requirements.md` remains a clear product baseline.
+- `AGENTS.md` conventions are present and being followed.
+- Type definitions remain meaningful inline documentation.
 
 ### Gaps
 
 | ID  | Severity | Gap |
 |-----|----------|-----|
-| D-1 | Medium   | No architecture overview diagram or document. Onboarding a new developer requires reading all files. |
-| D-2 | Medium   | No `CHANGELOG.md` — no history of changes. |
-| D-3 | Low      | IPC channel contract (`constants.ts`) has no documentation on data shapes passed over each channel. |
-| D-4 | Low      | No contribution guide or `CONTRIBUTING.md`. |
+| D-1 | Medium   | No architecture overview document/diagram. |
+| D-2 | Medium   | No `CHANGELOG.md`. |
+| D-3 | Low      | IPC contract lacks explicit payload docs in one place. |
+| D-4 | Low      | No `CONTRIBUTING.md`. |
 
 ---
 
 ## 5. Build & Release
 
 ### Strengths
-- `electron-builder.yml` supports Windows (portable), macOS (DMG), and Linux (AppImage + DEB).
-- Both Unix (`build.sh`) and PowerShell (`build.ps1`) build scripts exist.
-- `__scripts/clean-build.ps1` provides a full clean-build workflow.
-- All build tasks exposed as `npm run` scripts with clear names.
+- Cross-platform packaging still configured (Win/macOS/Linux).
+- Build scripts remain available for Unix + PowerShell.
 
 ### Gaps
 
 | ID  | Severity | Gap |
 |-----|----------|-----|
-| B-1 | High     | **No CI/CD pipeline** (no `.github/workflows/` or equivalent). Tests never run automatically on push. |
-| B-2 | Medium   | Code signing is disabled on Windows (`scripts/skip-sign.cjs`). Releases will trigger SmartScreen warnings. |
-| B-3 | Low      | No auto-update mechanism configured in `electron-builder.yml`. |
+| B-1 | High     | No CI pipeline (`.github/workflows/` missing). |
+| B-2 | Medium   | Windows signing still disabled (`scripts/skip-sign.cjs`). |
+| B-3 | Low      | No auto-update pipeline configured. |
 
 ---
 
 ## 6. Security
 
 ### Strengths
-- Electron security best practices followed: `sandbox: true`, `contextIsolation: true`, `nodeIntegration: false`.
-- Renderer communicates with main only through the typed preload bridge.
-- No user-supplied content is passed directly to shell or file-system APIs.
-- No XSS vectors detected in DOM construction helpers (`dom.ts`).
+- Electron hardening posture remains good (`sandbox`, `contextIsolation`, no renderer node integration).
+- Typed preload bridge still constrains main-process access.
+- Blocking `window.confirm()` path removed from delete flow.
 
 ### Issues
 
 | ID  | Severity | File | Line | Issue |
 |-----|----------|------|------|-------|
-| S-1 | Medium   | `src/renderer/views/TreeView.ts` | ~381 | `window.confirm()` is a synchronous, blocking call. In Electron it can in some configurations be sandboxed away or behave unexpectedly. Replace with an async modal. |
-| S-2 | Low      | `src/renderer/core/Logger.ts` | 45 | `typeof window !== 'undefined'` guard is correct but log content is sent directly to `window.api.log`. Validate that no sensitive data (e.g., file paths with usernames) is logged in non-debug builds. |
+| S-2 | Low      | `src/renderer/core/Logger.ts` | ~45 | Ensure sensitive data is redacted/filtered for non-debug builds before forwarding logs. |
 
 ---
 
 ## 7. Performance
 
 ### Strengths
-- Auto-save debounced at 2,000 ms — no excessive I/O on keystroke.
-- Editor content updates debounced at 300 ms.
-- Event listeners cleaned up on view unload — no ghost listeners accumulate.
+- Debounced editor updates and autosave behavior remain good.
+- Event listener lifecycle cleanup prevents leak accumulation.
 
 ### Issues
 
 | ID  | Severity | Area | Issue |
 |-----|----------|------|-------|
-| P-1 | Medium   | `TreeView.ts` | All tree nodes are rendered as DOM elements on load. A vault with hundreds of notes will render all nodes at once, causing slow initial paint and sluggish scrolling. Implement virtual scrolling or lazy rendering. |
-| P-2 | Low      | `Vault.ts` | `flattenTree()` is called repeatedly for operations that could be cached. For large trees, this traversal runs multiple times per user action. |
-| P-3 | Low      | `SearchView.ts` | Full-tree flattening happens on every keystroke. For large vaults, add a debounce to the search input or pre-index note content. |
+| P-1 | Medium   | `TreeView.ts` | Full DOM rendering for all nodes still scales poorly for large trees. |
+| P-2 | Low      | `Vault.ts` | Repeated tree traversals in some operations remain uncached. |
+| P-3 | Low      | `SearchView.ts` | Full-tree flatten still runs on each keystroke; no search debounce/indexing yet. |
 
 ---
 
@@ -172,28 +172,28 @@
 
 | Priority | ID  | Action |
 |----------|-----|--------|
-| 1 | C-1 | Fix `require('electron')` in `menu.ts` — replace with ES6 import |
-| 2 | C-2 | Replace `window.confirm()` in `TreeView.ts` with a custom async modal |
-| 3 | T-1 | Write unit tests for `Vault.ts` (create, update, delete, save/load cycle) |
-| 4 | T-3 | Write unit tests for `file-manager.ts` (read, write, error cases) |
+| 1 | B-1 | Add CI (`typecheck`, `lint`, `test`) on push/PR. |
+| 2 | T-4 | Add initial Playwright E2E smoke tests (launch, create note, search). |
+| 3 | T-5 | Add one integration-style unit test for create → save → reload flow. |
+| 4 | P-1 | Start virtualized/lazy tree rendering work to improve large-tree responsiveness. |
 
 ### Short-term (next sprint)
 
 | Priority | ID  | Action |
 |----------|-----|--------|
-| 5 | B-1 | Set up a CI pipeline (GitHub Actions) running `npm run typecheck`, `npm run lint`, `npm test` on every push |
-| 6 | T-2 | Add tests for `EditorView.ts` and `SearchView.ts` |
-| 7 | T-4 | Write at least 3 Playwright E2E tests: launch, create note, search |
-| 8 | A-1 | Refactor `TreeView.ts` — extract drag-and-drop logic into a `DragHandler` class |
+| 5 | P-1 | Introduce lazy/virtual tree rendering strategy. |
+| 6 | P-3 | Debounce search input and/or add lightweight in-memory index. |
+| 7 | D-1 | Add architecture overview doc + diagram. |
+| 8 | D-2 | Add `CHANGELOG.md` and release note process. |
 
 ### Medium-term
 
 | Priority | ID  | Action |
 |----------|-----|--------|
-| 9  | P-1 | Implement virtual list rendering in `TreeView.ts` for large vaults |
-| 10 | D-1 | Write an architecture overview document (one diagram + one page) |
-| 11 | B-2 | Set up code signing for Windows releases |
-| 12 | P-3 | Debounce search input or pre-index note content in `SearchView.ts` |
+| 9  | B-2 | Configure Windows code signing pipeline. |
+| 10 | D-3 | Document IPC channels and payload schemas. |
+| 11 | D-4 | Add `CONTRIBUTING.md`. |
+| 12 | C-3 | Replace remaining logger string concatenations with template literals. |
 
 ---
 
@@ -201,30 +201,30 @@
 
 | File | LOC | Quality | Notes |
 |------|-----|---------|-------|
-| `src/main/index.ts` | 65 | Excellent | Clean Electron bootstrap |
+| `src/main/index.ts` | 97 | Good | Bootstrap/CLI parsing expanded; still no direct tests |
 | `src/main/constants.ts` | 14 | Excellent | — |
-| `src/main/file-manager.ts` | 71 | Excellent | No tests |
-| `src/main/ipc-handlers.ts` | 60 | Good | Minor style issue (C-3) |
-| `src/main/logger.ts` | 34 | Excellent | — |
-| `src/main/menu.ts` | 96 | Good | Fix import style (C-1) |
-| `src/preload/index.ts` | 28 | Excellent | Uses `satisfies`, well-typed |
-| `src/renderer/core/App.ts` | 106 | Good | Singleton pattern, fine at scale |
-| `src/renderer/core/Component.ts` | 156 | Excellent | Lifecycle base class, fully tested |
-| `src/renderer/core/Events.ts` | 76 | Excellent | Typed event emitter, fully tested |
-| `src/renderer/core/HotkeyManager.ts` | 78 | Good | No tests |
-| `src/renderer/core/Logger.ts` | 49 | Good | No tests |
-| `src/renderer/core/Vault.ts` | 181 | Excellent | **No tests** — highest risk |
-| `src/renderer/core/View.ts` | 59 | Excellent | Abstract base, well-structured |
-| `src/renderer/core/Workspace.ts` | 111 | Good | No tests |
-| `src/renderer/views/TreeView.ts` | 387 | Good | Largest file, blocking confirm (C-2) |
-| `src/renderer/views/EditorView.ts` | 115 | Good | No tests |
-| `src/renderer/views/SearchView.ts` | 140 | Good | No tests, no search debounce |
-| `src/renderer/views/StatusBar.ts` | 65 | Excellent | Clean |
+| `src/main/file-manager.ts` | 80 | Excellent | Now covered by unit tests |
+| `src/main/ipc-handlers.ts` | 64 | Good | Tested; minor style issue remains |
+| `src/main/logger.ts` | 33 | Excellent | — |
+| `src/main/menu.ts` | 95 | Good | Import-style issue fixed |
+| `src/preload/index.ts` | 29 | Excellent | Well-typed bridge |
+| `src/renderer/core/App.ts` | 92 | Good+ | Singleton constraint removed |
+| `src/renderer/core/Component.ts` | 156 | Excellent | Mature lifecycle base |
+| `src/renderer/core/Events.ts` | 76 | Excellent | Typed emitter, robust |
+| `src/renderer/core/HotkeyManager.ts` | 78 | Good | No direct tests yet |
+| `src/renderer/core/Logger.ts` | 49 | Good | Consider log redaction policy |
+| `src/renderer/core/Vault.ts` | 201 | Excellent | Newly tested core behaviors |
+| `src/renderer/core/View.ts` | 59 | Excellent | Clean abstraction |
+| `src/renderer/core/Workspace.ts` | 111 | Good | No direct tests yet |
+| `src/renderer/views/TreeView.ts` | 315 | Good+ | Decomposed; drag/drop + modal extracted |
+| `src/renderer/views/EditorView.ts` | 115 | Good | Now unit tested |
+| `src/renderer/views/SearchView.ts` | 140 | Good | Now unit tested |
+| `src/renderer/views/StatusBar.ts` | 71 | Excellent | Clean and focused |
 | `src/renderer/models/NoteNode.ts` | 77 | Excellent | Fully tested |
 | `src/renderer/helpers/debounce.ts` | 26 | Excellent | Fully tested |
 | `src/renderer/helpers/dom.ts` | 75 | Excellent | Fully tested |
-| `src/renderer/helpers/tree-utils.ts` | 71 | Excellent | Fully tested |
+| `src/renderer/helpers/tree-utils.ts` | 85 | Excellent | Fully tested |
 
 ---
 
-*Generated by Claude Code — treenote-obs maturity scan — 2026-03-03*
+*Regenerated by GitHub Copilot maturity scan — 2026-03-03*

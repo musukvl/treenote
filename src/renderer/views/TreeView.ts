@@ -3,6 +3,8 @@ import type { App } from '../core/App';
 import type { NoteNode } from '../models/NoteNode';
 import { createDiv, createSpan, createEl } from '../helpers/dom';
 import { countDescendants } from '../helpers/tree-utils';
+import { TreeDragDropController } from './tree/TreeDragDropController';
+import { DeleteConfirmationModal } from './tree/DeleteConfirmationModal';
 
 /**
  * Hierarchical tree panel with expand/collapse, keyboard navigation,
@@ -12,11 +14,18 @@ export class TreeView extends View {
   private treeContainerEl!: HTMLElement;
   private selectedNodeId: string | null = null;
   private nodeElements: Map<string, HTMLElement> = new Map();
-  private draggedNodeId: string | null = null;
-  private dropTargetId: string | null = null;
-  private dropPosition: 'inside' | 'before' | 'after' | null = null;
-  private dragExpandTimer: ReturnType<typeof setTimeout> | null = null;
-  private activeModalEl: HTMLElement | null = null;
+  private readonly dragDropController: TreeDragDropController;
+  private readonly deleteConfirmationModal = new DeleteConfirmationModal();
+
+  constructor(app: App, parentEl: HTMLElement) {
+    super(app, parentEl);
+    this.dragDropController = new TreeDragDropController({
+      app: this.app,
+      nodeElements: this.nodeElements,
+      toggleExpand: (nodeId) => this.toggleExpand(nodeId),
+      selectNode: (nodeId) => this.selectNode(nodeId),
+    });
+  }
 
   getViewType(): string {
     return 'tree';
@@ -92,98 +101,8 @@ export class TreeView extends View {
     // Double click to rename
     this.registerDomEvent(itemEl, 'dblclick', () => this.startInlineRename(node.id, labelEl));
 
-    // Drag and drop
-    itemEl.draggable = true;
-    this.registerDomEvent(itemEl, 'dragstart', (e: DragEvent) => {
-      this.draggedNodeId = node.id;
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', node.id);
-      }
-      itemEl.addClass('tree-view__item--dragging');
-    });
-
-    this.registerDomEvent(itemEl, 'dragover', (e: DragEvent) => {
-      if (!this.draggedNodeId || this.draggedNodeId === node.id) {
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-        return;
-      }
-      if (this.app.vault.isDescendant(this.draggedNodeId, node.id)) {
-        if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
-        return;
-      }
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-
-      const position = this.getDropPosition(itemEl, e.clientY);
-      if (this.dropTargetId !== node.id || this.dropPosition !== position) {
-        this.clearDropTarget();
-        this.dropTargetId = node.id;
-        this.dropPosition = position;
-        this.applyDropTargetClass(itemEl, position);
-
-        if (position === 'inside' && node.children.length > 0 && !node.isExpanded) {
-          this.dragExpandTimer = setTimeout(() => {
-            this.toggleExpand(node.id);
-          }, 600);
-        }
-      }
-    });
-
-    this.registerDomEvent(itemEl, 'dragleave', (e: DragEvent) => {
-      // Only clear if leaving this item (not entering a child)
-      if (!itemEl.contains(e.relatedTarget as Node)) {
-        if (this.dropTargetId === node.id) {
-          this.clearDropTarget();
-        }
-      }
-    });
-
-    this.registerDomEvent(itemEl, 'drop', (e: DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!this.draggedNodeId || this.draggedNodeId === node.id) return;
-
-      const movedId = this.draggedNodeId;
-      const position = this.dropTargetId === node.id ? this.dropPosition : 'inside';
-
-      let success = false;
-      if (position === 'inside') {
-        const draggedNode = this.app.vault.findNode(movedId);
-        if (draggedNode && draggedNode.parentId === node.id) {
-          this.cleanupDrag();
-          return;
-        }
-        node.isExpanded = true;
-        success = this.app.vault.moveNote(movedId, node.id);
-      } else {
-        const parentId = node.parentId;
-        if (!parentId) {
-          this.cleanupDrag();
-          return;
-        }
-        const parent = this.app.vault.findNode(parentId);
-        if (!parent) {
-          this.cleanupDrag();
-          return;
-        }
-        const targetNodeIndex = parent.children.findIndex((child) => child.id === node.id);
-        if (targetNodeIndex < 0) {
-          this.cleanupDrag();
-          return;
-        }
-        const targetIndex = position === 'before' ? targetNodeIndex : targetNodeIndex + 1;
-        success = this.app.vault.moveNote(movedId, parentId, targetIndex);
-      }
-
-      if (success) {
-        this.selectNode(movedId);
-      }
-      this.cleanupDrag();
-    });
-
-    this.registerDomEvent(itemEl, 'dragend', () => {
-      this.cleanupDrag();
+    this.dragDropController.registerItem(itemEl, node, (type, handler) => {
+      this.registerDomEvent(itemEl, type as keyof HTMLElementEventMap, handler);
     });
 
     this.nodeElements.set(node.id, itemEl);
@@ -335,53 +254,6 @@ export class TreeView extends View {
     requestAnimationFrame(() => document.addEventListener('click', closeHandler));
   }
 
-  // --- Drag helpers ---
-
-  private clearDropTarget(): void {
-    if (this.dropTargetId) {
-      const el = this.nodeElements.get(this.dropTargetId);
-      if (el) {
-        el.removeClass('tree-view__item--drop-target');
-        el.removeClass('tree-view__item--drop-before');
-        el.removeClass('tree-view__item--drop-after');
-      }
-      this.dropTargetId = null;
-      this.dropPosition = null;
-    }
-    if (this.dragExpandTimer) {
-      clearTimeout(this.dragExpandTimer);
-      this.dragExpandTimer = null;
-    }
-  }
-
-  private applyDropTargetClass(itemEl: HTMLElement, position: 'inside' | 'before' | 'after'): void {
-    if (position === 'inside') {
-      itemEl.addClass('tree-view__item--drop-target');
-      return;
-    }
-    itemEl.addClass(position === 'before' ? 'tree-view__item--drop-before' : 'tree-view__item--drop-after');
-  }
-
-  private getDropPosition(itemEl: HTMLElement, clientY: number): 'inside' | 'before' | 'after' {
-    const rect = itemEl.getBoundingClientRect();
-    if (rect.height <= 0) return 'inside';
-
-    const relativeY = clientY - rect.top;
-    const edgeThreshold = rect.height * 0.25;
-    if (relativeY <= edgeThreshold) return 'before';
-    if (relativeY >= rect.height - edgeThreshold) return 'after';
-    return 'inside';
-  }
-
-  private cleanupDrag(): void {
-    if (this.draggedNodeId) {
-      const el = this.nodeElements.get(this.draggedNodeId);
-      if (el) el.removeClass('tree-view__item--dragging');
-    }
-    this.clearDropTarget();
-    this.draggedNodeId = null;
-  }
-
   // --- Public action methods ---
 
   createSiblingNote(): void {
@@ -428,7 +300,7 @@ export class TreeView extends View {
         ? `Delete "${node.name}" and ${childCount} child note(s)?`
         : `Delete "${node.name}"?`;
 
-    const shouldDelete = await this.showDeleteConfirmation(msg);
+    const shouldDelete = await this.deleteConfirmationModal.show(msg);
     if (shouldDelete) {
       this.app.vault.deleteNote(this.selectedNodeId);
       this.selectedNodeId = null;
@@ -436,68 +308,8 @@ export class TreeView extends View {
     }
   }
 
-  private showDeleteConfirmation(message: string): Promise<boolean> {
-    this.activeModalEl?.remove();
-
-    const overlayEl = createDiv({ cls: 'tree-view__modal-overlay' });
-    const modalEl = createDiv({ cls: 'tree-view__modal', parent: overlayEl });
-    createDiv({ cls: 'tree-view__modal-title', text: 'Delete note', parent: modalEl });
-    createDiv({ cls: 'tree-view__modal-message', text: message, parent: modalEl });
-
-    const actionsEl = createDiv({ cls: 'tree-view__modal-actions', parent: modalEl });
-    const cancelButtonEl = createEl('button', {
-      cls: 'tree-view__modal-btn',
-      text: 'Cancel',
-      parent: actionsEl,
-    }) as HTMLButtonElement;
-    cancelButtonEl.type = 'button';
-
-    const deleteButtonEl = createEl('button', {
-      cls: 'tree-view__modal-btn tree-view__modal-btn--danger',
-      text: 'Delete',
-      parent: actionsEl,
-    }) as HTMLButtonElement;
-    deleteButtonEl.type = 'button';
-
-    document.body.appendChild(overlayEl);
-    this.activeModalEl = overlayEl;
-
-    return new Promise((resolve) => {
-      const cleanup = (): void => {
-        document.removeEventListener('keydown', handleKeydown);
-        overlayEl.remove();
-        if (this.activeModalEl === overlayEl) {
-          this.activeModalEl = null;
-        }
-      };
-
-      const finish = (result: boolean): void => {
-        cleanup();
-        resolve(result);
-      };
-
-      const handleKeydown = (e: KeyboardEvent): void => {
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          finish(false);
-        }
-      };
-
-      cancelButtonEl.addEventListener('click', () => finish(false));
-      deleteButtonEl.addEventListener('click', () => finish(true));
-      overlayEl.addEventListener('click', (e) => {
-        if (e.target === overlayEl) {
-          finish(false);
-        }
-      });
-
-      document.addEventListener('keydown', handleKeydown);
-      deleteButtonEl.focus();
-    });
-  }
-
   override onUnload(): void {
-    this.activeModalEl?.remove();
-    this.activeModalEl = null;
+    this.dragDropController.dispose();
+    this.deleteConfirmationModal.dispose();
   }
 }

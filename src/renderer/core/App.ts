@@ -6,7 +6,7 @@ import { HotkeyManager } from './HotkeyManager';
 import { Logger } from './Logger';
 
 /**
- * Singleton root object. Orchestrates all subsystems.
+ * Root object that orchestrates all subsystems.
  * Mirrors Obsidian's App class.
  */
 export class App extends Component {
@@ -17,21 +17,8 @@ export class App extends Component {
   readonly logger: Logger;
   readonly rootEl: HTMLElement;
 
-  private static _instance: App | null = null;
-
-  static getInstance(): App {
-    if (!App._instance) {
-      throw new Error('App not initialized. Call new App(rootEl) first.');
-    }
-    return App._instance;
-  }
-
   constructor(rootEl: HTMLElement) {
     super();
-    if (App._instance) {
-      throw new Error('App is a singleton. Only one instance allowed.');
-    }
-    App._instance = this;
     this.rootEl = rootEl;
 
     // Create subsystems (order matters)
@@ -52,7 +39,6 @@ export class App extends Component {
 
   onunload(): void {
     this.logger.debug('App', 'Unloading...');
-    App._instance = null;
   }
 
   private registerGlobalHotkeys(): void {
