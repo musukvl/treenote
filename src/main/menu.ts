@@ -1,4 +1,4 @@
-import { Menu, type BrowserWindow } from 'electron';
+import { Menu, dialog, type BrowserWindow } from 'electron';
 import { IPC } from './constants';
 
 /** Build and set the application menu. */
@@ -78,7 +78,6 @@ export function buildMenu(mainWindow: BrowserWindow): void {
         {
           label: 'About TreeNote',
           click: () => {
-            const { dialog } = require('electron');
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'About TreeNote',
