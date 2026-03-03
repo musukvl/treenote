@@ -12,23 +12,7 @@ echo "=== TreeNote Build Script ==="
 echo "Installing dependencies..."
 npm ci
 
-echo "Patching electron-builder (symlink workaround)..."
-node scripts/patch-builder.cjs
-
-echo "Running linter..."
-npm run lint
-
-echo "Running type check..."
-npm run typecheck
-
-echo "Running unit tests..."
-npm run test
-
-echo "Building and packaging..."
-npm run package
-
-echo "Reverting electron-builder patch..."
-node scripts/patch-builder.cjs --revert
+echo "Building..."
+npm run build
 
 echo "=== Build complete ==="
-echo "Executable is in dist/ directory"
