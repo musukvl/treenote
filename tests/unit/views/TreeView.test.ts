@@ -266,3 +266,60 @@ describe('TreeView drag-and-drop', () => {
     expect(vault.moveNote).not.toHaveBeenCalled();
   });
 });
+
+describe('TreeView delete confirmation', () => {
+  let treeView: TreeView;
+  let mockApp: ReturnType<typeof createMockApp>;
+  let parentEl: HTMLElement;
+
+  beforeEach(() => {
+    parentEl = document.createElement('div');
+    document.body.appendChild(parentEl);
+    mockApp = createMockApp();
+    treeView = new TreeView(mockApp as never, parentEl);
+    treeView.load();
+  });
+
+  afterEach(() => {
+    treeView.unload();
+    parentEl.remove();
+  });
+
+  it('should show modal and cancel deletion', async () => {
+    const app = mockApp as { vault: { deleteNote: ReturnType<typeof vi.fn> } };
+
+    treeView.selectNode('a');
+    const deletePromise = treeView.deleteSelectedNote();
+
+    const modal = document.querySelector('.tree-view__modal-overlay');
+    expect(modal).toBeTruthy();
+
+    const cancelButton = document.querySelector('.tree-view__modal-btn') as HTMLButtonElement;
+    expect(cancelButton.textContent).toBe('Cancel');
+    cancelButton.click();
+
+    await deletePromise;
+    expect(app.vault.deleteNote).not.toHaveBeenCalled();
+    expect(document.querySelector('.tree-view__modal-overlay')).toBeNull();
+  });
+
+  it('should delete note and clear active selection after confirmation', async () => {
+    const app = mockApp as { vault: { deleteNote: ReturnType<typeof vi.fn> }; events: Events };
+    const activeNoteChange = vi.fn();
+    app.events.on('active-note-change', activeNoteChange);
+
+    treeView.selectNode('a');
+    const deletePromise = treeView.deleteSelectedNote();
+
+    const deleteButton = document.querySelector(
+      '.tree-view__modal-btn--danger',
+    ) as HTMLButtonElement;
+    expect(deleteButton).toBeTruthy();
+    deleteButton.click();
+
+    await deletePromise;
+    expect(app.vault.deleteNote).toHaveBeenCalledWith('a');
+    expect(activeNoteChange).toHaveBeenCalledWith(null);
+    expect(document.querySelector('.tree-view__modal-overlay')).toBeNull();
+  });
+});

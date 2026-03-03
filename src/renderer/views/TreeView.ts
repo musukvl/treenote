@@ -15,6 +15,7 @@ export class TreeView extends View {
   private draggedNodeId: string | null = null;
   private dropTargetId: string | null = null;
   private dragExpandTimer: ReturnType<typeof setTimeout> | null = null;
+  private activeModalEl: HTMLElement | null = null;
 
   getViewType(): string {
     return 'tree';
@@ -287,7 +288,7 @@ export class TreeView extends View {
       { label: 'New Note', action: () => this.createSiblingNote() },
       { label: 'New Child Note', action: () => this.createChildNote() },
       { label: 'Rename', action: () => this.renameSelectedNote() },
-      { label: 'Delete', action: () => this.deleteSelectedNote() },
+      { label: 'Delete', action: () => void this.deleteSelectedNote() },
     ];
 
     for (const item of items) {
@@ -367,7 +368,7 @@ export class TreeView extends View {
     if (label) this.startInlineRename(this.selectedNodeId, label);
   }
 
-  deleteSelectedNote(): void {
+  async deleteSelectedNote(): Promise<void> {
     if (!this.selectedNodeId) return;
     const node = this.app.vault.findNode(this.selectedNodeId);
     if (!node) return;
@@ -378,10 +379,76 @@ export class TreeView extends View {
         ? `Delete "${node.name}" and ${childCount} child note(s)?`
         : `Delete "${node.name}"?`;
 
-    if (confirm(msg)) {
+    const shouldDelete = await this.showDeleteConfirmation(msg);
+    if (shouldDelete) {
       this.app.vault.deleteNote(this.selectedNodeId);
       this.selectedNodeId = null;
       this.app.events.trigger('active-note-change', null);
     }
+  }
+
+  private showDeleteConfirmation(message: string): Promise<boolean> {
+    this.activeModalEl?.remove();
+
+    const overlayEl = createDiv({ cls: 'tree-view__modal-overlay' });
+    const modalEl = createDiv({ cls: 'tree-view__modal', parent: overlayEl });
+    createDiv({ cls: 'tree-view__modal-title', text: 'Delete note', parent: modalEl });
+    createDiv({ cls: 'tree-view__modal-message', text: message, parent: modalEl });
+
+    const actionsEl = createDiv({ cls: 'tree-view__modal-actions', parent: modalEl });
+    const cancelButtonEl = createEl('button', {
+      cls: 'tree-view__modal-btn',
+      text: 'Cancel',
+      parent: actionsEl,
+    }) as HTMLButtonElement;
+    cancelButtonEl.type = 'button';
+
+    const deleteButtonEl = createEl('button', {
+      cls: 'tree-view__modal-btn tree-view__modal-btn--danger',
+      text: 'Delete',
+      parent: actionsEl,
+    }) as HTMLButtonElement;
+    deleteButtonEl.type = 'button';
+
+    document.body.appendChild(overlayEl);
+    this.activeModalEl = overlayEl;
+
+    return new Promise((resolve) => {
+      const cleanup = (): void => {
+        document.removeEventListener('keydown', handleKeydown);
+        overlayEl.remove();
+        if (this.activeModalEl === overlayEl) {
+          this.activeModalEl = null;
+        }
+      };
+
+      const finish = (result: boolean): void => {
+        cleanup();
+        resolve(result);
+      };
+
+      const handleKeydown = (e: KeyboardEvent): void => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          finish(false);
+        }
+      };
+
+      cancelButtonEl.addEventListener('click', () => finish(false));
+      deleteButtonEl.addEventListener('click', () => finish(true));
+      overlayEl.addEventListener('click', (e) => {
+        if (e.target === overlayEl) {
+          finish(false);
+        }
+      });
+
+      document.addEventListener('keydown', handleKeydown);
+      deleteButtonEl.focus();
+    });
+  }
+
+  override onUnload(): void {
+    this.activeModalEl?.remove();
+    this.activeModalEl = null;
   }
 }
