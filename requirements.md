@@ -43,6 +43,10 @@ Treenote is a notes management application that organizes notes in a hierarchica
 - Changes are auto-saved after a short delay
 - Manual save is available via keyboard shortcut
 - New file is created with a welcome note if none exists
+- Application accepts note file path as startup argument (`.yml` or `.yaml`)
+- Supported startup argument formats: positional path, `--file <path>`, `--file=<path>`, `-f <path>`
+- If provided startup file path does not exist, the file is created automatically
+- Dev run with file argument uses double separator syntax: `npm run dev -- -- /path/to/note.yml`
 
 ### Keyboard Shortcuts
 
