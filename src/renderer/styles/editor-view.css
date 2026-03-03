@@ -1,0 +1,45 @@
+.editor-view__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-lg);
+}
+
+.editor-view__title {
+  display: block;
+  width: 100%;
+  padding: var(--space-md) var(--space-xl);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  outline: none;
+}
+
+.editor-view__title::placeholder {
+  color: var(--color-text-muted);
+}
+
+.editor-view__content {
+  display: block;
+  flex: 1;
+  width: 100%;
+  padding: var(--space-md) var(--space-xl);
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+}
+
+.editor-view__content::placeholder {
+  color: var(--color-text-muted);
+}

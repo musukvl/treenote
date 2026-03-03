@@ -1,0 +1,17 @@
+appId: com.treenote.app
+productName: TreeNote
+directories:
+  buildResources: resources
+  output: dist
+files:
+  - out/**/*
+win:
+  target: [portable]
+  icon: resources/icon.ico
+  sign: scripts/skip-sign.cjs
+mac:
+  target: [dmg]
+  icon: resources/icon.icns
+linux:
+  target: [AppImage, deb]
+  icon: resources/icon.png
