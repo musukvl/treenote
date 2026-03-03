@@ -8,7 +8,7 @@ files:
 win:
   target: [portable]
   icon: resources/icon.ico
-  sign: scripts/skip-sign.cjs
+  signAndEditExecutable: false
 mac:
   target: [dmg]
   icon: resources/icon.icns

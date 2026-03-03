@@ -16,7 +16,8 @@
       "WebFetch(domain:*)",
       "mcp__Claude_Preview__preview_start",
       "Bash(CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:win)",
-      "Bash(bash build.sh)"
+      "Bash(bash build.sh)",
+      "Bash(bash /home/musuk/dev/treenote/build-win.sh)"
     ]
   },
   "spinnerVerbs": {

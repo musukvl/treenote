@@ -5,6 +5,7 @@ export interface TreeNoteAPI {
   saveFile(content: string): Promise<void>;
   showSaveDialog(): Promise<string | null>;
   showOpenDialog(): Promise<string | null>;
+  getFilePath(): Promise<string>;
   getAppVersion(): Promise<string>;
   log(level: string, ...args: unknown[]): void;
   onMenuAction(callback: (action: string) => void): () => void;
@@ -15,6 +16,7 @@ contextBridge.exposeInMainWorld('api', {
   saveFile: (content: string): Promise<void> => ipcRenderer.invoke('file:save', content),
   showSaveDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:save'),
   showOpenDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:open'),
+  getFilePath: (): Promise<string> => ipcRenderer.invoke('file:path'),
   getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
   log: (level: string, ...args: unknown[]): void => {
     ipcRenderer.send('log:write', level, ...args);

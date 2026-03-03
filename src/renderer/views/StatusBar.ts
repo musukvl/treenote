@@ -31,14 +31,20 @@ export class StatusBar extends Component {
     });
 
     this.registerEvent(
-      this.app.events.on('save-status-change', (status) => {
+      this.app.events.on('save-status-change', async (status) => {
         const labels: Record<string, string> = {
           saved: 'Saved',
           unsaved: 'Unsaved changes',
           saving: 'Saving...',
           error: 'Save failed!',
         };
-        this.saveStatusEl.textContent = labels[status] ?? status;
+        const label = labels[status] ?? status;
+        if (status === 'saved') {
+          const filePath = await window.api.getFilePath();
+          this.saveStatusEl.textContent = `${label} — ${filePath}`;
+        } else {
+          this.saveStatusEl.textContent = label;
+        }
         this.saveStatusEl.className = `status-bar__save-status status-bar__save-status--${status}`;
       }),
     );

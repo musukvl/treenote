@@ -5,6 +5,7 @@ export const IPC = {
   SHOW_SAVE_DIALOG: 'dialog:save',
   SHOW_OPEN_DIALOG: 'dialog:open',
   GET_APP_VERSION: 'app:version',
+  GET_FILE_PATH: 'file:path',
   LOG: 'log:write',
   MENU_ACTION: 'menu:action',
 } as const;

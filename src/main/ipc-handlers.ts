@@ -45,6 +45,10 @@ export function registerIpcHandlers(fileManager: FileManager, mainWindow: Browse
     return app.getVersion();
   });
 
+  ipcMain.handle(IPC.GET_FILE_PATH, () => {
+    return fileManager.getFilePath();
+  });
+
   ipcMain.on(IPC.LOG, (_event, level: string, ...args: unknown[]) => {
     switch (level) {
       case 'error':
