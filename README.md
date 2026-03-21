@@ -2,6 +2,8 @@
 
 TreeNote is an Electron-based desktop notes app that organizes notes in a parent-child tree.
 
+![TreeNote main screen](docs/treenote.png)
+
 ## Features
 
 - Hierarchical notes (create, rename, delete, reorder, move by drag-and-drop)
@@ -11,7 +13,17 @@ TreeNote is an Electron-based desktop notes app that organizes notes in a parent
 - YAML-based persistence with auto-save and manual save
 - Cross-platform packaging targets (Windows, macOS, Linux)
 
-## Tech Stack
+
+## Installation
+
+Download the latest TreeNote-Setup installer for your platform from the
+[GitHub Releases](https://github.com/musuk/treenote/releases/latest) page.
+
+No additional runtime or dependencies required — TreeNote is a self-contained executable.
+
+## Development
+
+### Tech Stack
 
 - Electron + electron-vite
 - TypeScript
@@ -19,18 +31,19 @@ TreeNote is an Electron-based desktop notes app that organizes notes in a parent
 - ESLint + Prettier
 - `js-yaml` for persistence
 
-## Prerequisites
 
-- Node.js 20+ (recommended)
+### Prerequisites
+
+- Node.js 20+
 - npm
 
-## Install
+### Install dependencies
 
 ```bash
 npm ci
 ```
 
-## Run in Development
+### Run in Development
 
 ```bash
 npm run dev
