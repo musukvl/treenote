@@ -134,9 +134,15 @@ if [[ ! -d "${DIST_DIR}" ]]; then
 	exit 1
 fi
 
-mapfile -t DMG_CANDIDATES < <(find "${DIST_DIR}" -maxdepth 1 -type f -name "*${VERSION}*.dmg" | sort)
+DMG_CANDIDATES=()
+while IFS= read -r dmg_path; do
+	DMG_CANDIDATES+=("${dmg_path}")
+done < <(find "${DIST_DIR}" -maxdepth 1 -type f -name "*${VERSION}*.dmg" | sort)
+
 if [[ ${#DMG_CANDIDATES[@]} -eq 0 ]]; then
-	mapfile -t DMG_CANDIDATES < <(find "${DIST_DIR}" -maxdepth 1 -type f -name "*.dmg" | sort)
+	while IFS= read -r dmg_path; do
+		DMG_CANDIDATES+=("${dmg_path}")
+	done < <(find "${DIST_DIR}" -maxdepth 1 -type f -name "*.dmg" | sort)
 fi
 if [[ ${#DMG_CANDIDATES[@]} -eq 0 ]]; then
 	echo -e "${RED}Error: no DMG artifact found in ${DIST_DIR}${NC}"
