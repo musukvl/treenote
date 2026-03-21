@@ -29,11 +29,13 @@ jobs:
       - name: Package Windows (installer + portable)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --config electron-builder.yml
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             dist/TreeNote Setup *.exe
             dist/TreeNote *.exe
