@@ -6,9 +6,16 @@ directories:
 files:
   - out/**/*
 win:
-  target: [portable]
+  target: [nsis, portable]
   icon: resources/icon.ico
   signAndEditExecutable: false
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: TreeNote
+  include: resources/installer/path-env.nsh
 mac:
   target: [dmg]
   icon: resources/icon.icns
