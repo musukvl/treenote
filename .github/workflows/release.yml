@@ -38,6 +38,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             dist/TreeNote Setup *.exe
-            dist/TreeNote *.exe
+            dist/TreeNote [0-9]*.exe
           generate_release_notes: false
           body_path: RELEASE_NOTES.md
