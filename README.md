@@ -82,8 +82,8 @@ npm run package:dir
 These scripts install dependencies and build from scratch:
 
 - `build.sh` – generic build (`npm ci` + `npm run build`)
-- `build-win.sh` – Windows executable packaging via `electron-builder`
-- `build-win.bat` – Windows batch equivalent of `build-win.sh`
+- `build-win.sh` – Windows installer + portable packaging via `electron-builder`
+- `build-win.bat` – Windows batch equivalent of `build-win.sh`; outputs to `dist/`
 
 ## Test, Lint, Typecheck
 
@@ -126,11 +126,33 @@ Core shortcuts available via app menu:
 - `resources` – app icons and packaging resources
 - `scripts` – helper scripts for packaging/build customization
 
+## Windows Installation
+
+### Download and install (recommended)
+
+1. Download `TreeNote Setup <version>.exe` from [GitHub Releases](../../releases).
+2. Run the installer — it installs per-user (no admin required).
+3. The installer adds the TreeNote directory to your **user PATH** automatically.
+4. Open a new command prompt and run:
+   ```
+   treenote
+   ```
+
+### Portable (no install)
+
+Download `TreeNote <version>.exe`, place it anywhere, and run it directly.
+No PATH changes are made in portable mode.
+
+### Uninstall
+
+Use **Settings → Apps** or **Control Panel → Programs** to uninstall.
+The installer removes itself and its installed files cleanly.
+
 ## Packaging Targets
 
 Configured in `electron-builder.yml`:
 
-- Windows: portable
+- Windows: NSIS installer + portable
 - macOS: dmg
 - Linux: AppImage, deb
 
