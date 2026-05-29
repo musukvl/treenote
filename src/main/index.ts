@@ -10,7 +10,7 @@ let mainWindow: BrowserWindow | null = null;
 
 function getDataFilePath(): string {
   // Portable mode: store data file next to the executable
-  const exePath = app.getPath('exe');
+  const exePath = process.env.APPIMAGE || app.getPath('exe');
   const exeDir = dirname(exePath);
   return join(exeDir, DATA_FILE_NAME);
 }
