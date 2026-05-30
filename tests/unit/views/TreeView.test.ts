@@ -404,3 +404,61 @@ describe('TreeView lifecycle cleanup', () => {
     parentEl.remove();
   });
 });
+
+describe('TreeView inline rename', () => {
+  let treeView: TreeView;
+  let mockApp: ReturnType<typeof createMockApp>;
+  let parentEl: HTMLElement;
+
+  beforeEach(() => {
+    parentEl = document.createElement('div');
+    document.body.appendChild(parentEl);
+    mockApp = createMockApp();
+    treeView = new TreeView(mockApp as never, parentEl);
+    treeView.load();
+  });
+
+  afterEach(() => {
+    treeView.unload();
+    parentEl.remove();
+  });
+
+  it('should not call renameNote twice when Enter triggers blur', () => {
+    const app = mockApp as { vault: { renameNote: ReturnType<typeof vi.fn> } };
+
+    // Select node A and trigger inline rename via double-click
+    const labelEl = parentEl.querySelector('[data-node-id="a"] .tree-view__label') as HTMLElement;
+    expect(labelEl).toBeTruthy();
+    labelEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    // Find the rename input
+    const input = parentEl.querySelector('.tree-view__rename-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Renamed A';
+
+    // Press Enter (which triggers finish), then blur (which would trigger finish again)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    input.dispatchEvent(new Event('blur'));
+
+    expect(app.vault.renameNote).toHaveBeenCalledTimes(1);
+    expect(app.vault.renameNote).toHaveBeenCalledWith('a', 'Renamed A');
+  });
+
+  it('should not call renameNote on Escape', () => {
+    const app = mockApp as { vault: { renameNote: ReturnType<typeof vi.fn> } };
+
+    const labelEl = parentEl.querySelector('[data-node-id="a"] .tree-view__label') as HTMLElement;
+    labelEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    const input = parentEl.querySelector('.tree-view__rename-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Should Not Save';
+
+    // Press Escape
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    // Blur fires after Escape
+    input.dispatchEvent(new Event('blur'));
+
+    expect(app.vault.renameNote).not.toHaveBeenCalled();
+  });
+});
