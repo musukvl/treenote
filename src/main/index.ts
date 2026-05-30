@@ -83,7 +83,6 @@ async function createWindow(): Promise<void> {
 app.whenReady().then(() => {
   registerIpcHandlers({
     getFileManager: () => fileManager!,
-    getMainWindow: () => mainWindow,
   });
 
   void createWindow();
