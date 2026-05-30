@@ -7,6 +7,7 @@ import { DATA_FILE_NAME } from './constants';
 import { logger } from './logger';
 
 let mainWindow: BrowserWindow | null = null;
+let fileManager: FileManager | null = null;
 
 function getDataFilePath(): string {
   // Portable mode: store data file next to the executable
@@ -60,10 +61,9 @@ async function createWindow(): Promise<void> {
   });
 
   const filePath = resolveDataFilePath(process.argv);
-  const fileManager = new FileManager(filePath);
+  fileManager = new FileManager(filePath);
   await fileManager.ensureFileExists();
 
-  registerIpcHandlers(fileManager, mainWindow);
   buildMenu(mainWindow);
 
   // In dev, load from vite dev server; in prod, load from file
@@ -81,6 +81,10 @@ async function createWindow(): Promise<void> {
 }
 
 app.whenReady().then(() => {
+  registerIpcHandlers({
+    getFileManager: () => fileManager!,
+  });
+
   void createWindow();
 
   app.on('activate', () => {

@@ -11,8 +11,7 @@ export class Logger {
   constructor(app: App) {
     this.app = app;
     // Enable debug logging if URL has ?debug or env var is set
-    this._enabled =
-      typeof window !== 'undefined' && window.location?.search?.includes('debug');
+    this._enabled = typeof window !== 'undefined' && window.location?.search?.includes('debug');
   }
 
   get enabled(): boolean {

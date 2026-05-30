@@ -71,6 +71,10 @@ function createMockApp() {
     createNote: vi.fn(),
     renameNote: vi.fn(),
     deleteNote: vi.fn(),
+    setExpanded: vi.fn((id: string, expanded: boolean) => {
+      const node = findNodeById(root, id);
+      if (node) node.isExpanded = expanded;
+    }),
   };
 
   const workspace = {
@@ -202,7 +206,17 @@ describe('TreeView drag-and-drop', () => {
 
     const itemA = getItemEl('a');
     Object.defineProperty(itemA, 'getBoundingClientRect', {
-      value: () => ({ top: 100, height: 40, width: 0, left: 0, right: 0, bottom: 140, x: 0, y: 100, toJSON: () => ({}) }),
+      value: () => ({
+        top: 100,
+        height: 40,
+        width: 0,
+        left: 0,
+        right: 0,
+        bottom: 140,
+        x: 0,
+        y: 100,
+        toJSON: () => ({}),
+      }),
     });
 
     getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
@@ -218,7 +232,17 @@ describe('TreeView drag-and-drop', () => {
 
     const itemA = getItemEl('a');
     Object.defineProperty(itemA, 'getBoundingClientRect', {
-      value: () => ({ top: 100, height: 40, width: 0, left: 0, right: 0, bottom: 140, x: 0, y: 100, toJSON: () => ({}) }),
+      value: () => ({
+        top: 100,
+        height: 40,
+        width: 0,
+        left: 0,
+        right: 0,
+        bottom: 140,
+        x: 0,
+        y: 100,
+        toJSON: () => ({}),
+      }),
     });
 
     getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
@@ -356,5 +380,89 @@ describe('TreeView delete confirmation', () => {
     expect(app.vault.deleteNote).toHaveBeenCalledWith('a');
     expect(activeNoteChange).toHaveBeenCalledWith(null);
     expect(document.querySelector('.tree-view__modal-overlay')).toBeNull();
+  });
+});
+
+describe('TreeView lifecycle cleanup', () => {
+  it('should dispose drag-drop controller and modal on unload', () => {
+    const parentEl = document.createElement('div');
+    document.body.appendChild(parentEl);
+    const mockApp = createMockApp();
+    const treeView = new TreeView(mockApp as never, parentEl);
+    treeView.load();
+
+    // Access private fields via any cast to spy on dispose
+    const controller = (treeView as unknown as { dragDropController: { dispose: () => void } })
+      .dragDropController;
+    const modal = (
+      treeView as unknown as { deleteConfirmationModal: { dispose: () => void } }
+    ).deleteConfirmationModal;
+
+    const controllerDisposeSpy = vi.spyOn(controller, 'dispose');
+    const modalDisposeSpy = vi.spyOn(modal, 'dispose');
+
+    treeView.unload();
+
+    expect(controllerDisposeSpy).toHaveBeenCalled();
+    expect(modalDisposeSpy).toHaveBeenCalled();
+    parentEl.remove();
+  });
+});
+
+describe('TreeView inline rename', () => {
+  let treeView: TreeView;
+  let mockApp: ReturnType<typeof createMockApp>;
+  let parentEl: HTMLElement;
+
+  beforeEach(() => {
+    parentEl = document.createElement('div');
+    document.body.appendChild(parentEl);
+    mockApp = createMockApp();
+    treeView = new TreeView(mockApp as never, parentEl);
+    treeView.load();
+  });
+
+  afterEach(() => {
+    treeView.unload();
+    parentEl.remove();
+  });
+
+  it('should not call renameNote twice when Enter triggers blur', () => {
+    const app = mockApp as { vault: { renameNote: ReturnType<typeof vi.fn> } };
+
+    // Select node A and trigger inline rename via double-click
+    const labelEl = parentEl.querySelector('[data-node-id="a"] .tree-view__label') as HTMLElement;
+    expect(labelEl).toBeTruthy();
+    labelEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    // Find the rename input
+    const input = parentEl.querySelector('.tree-view__rename-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Renamed A';
+
+    // Press Enter (which triggers finish), then blur (which would trigger finish again)
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    input.dispatchEvent(new Event('blur'));
+
+    expect(app.vault.renameNote).toHaveBeenCalledTimes(1);
+    expect(app.vault.renameNote).toHaveBeenCalledWith('a', 'Renamed A');
+  });
+
+  it('should not call renameNote on Escape', () => {
+    const app = mockApp as { vault: { renameNote: ReturnType<typeof vi.fn> } };
+
+    const labelEl = parentEl.querySelector('[data-node-id="a"] .tree-view__label') as HTMLElement;
+    labelEl.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+    const input = parentEl.querySelector('.tree-view__rename-input') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    input.value = 'Should Not Save';
+
+    // Press Escape
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    // Blur fires after Escape
+    input.dispatchEvent(new Event('blur'));
+
+    expect(app.vault.renameNote).not.toHaveBeenCalled();
   });
 });

@@ -49,12 +49,8 @@ export class StatusBar extends Component {
       }),
     );
 
-    this.registerEvent(
-      this.app.events.on('tree-changed', () => this.updateNoteCount()),
-    );
-    this.registerEvent(
-      this.app.events.on('data-loaded', () => this.updateNoteCount()),
-    );
+    this.registerEvent(this.app.events.on('tree-changed', () => this.updateNoteCount()));
+    this.registerEvent(this.app.events.on('data-loaded', () => this.updateNoteCount()));
   }
 
   private updateNoteCount(): void {

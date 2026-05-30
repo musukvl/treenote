@@ -46,7 +46,9 @@ if (revert) {
   } else if (content.includes(PATCHED)) {
     console.log('Already patched.');
   } else {
-    console.error('ERROR: Could not find expected code in util.js. electron-builder version may have changed.');
+    console.error(
+      'ERROR: Could not find expected code in util.js. electron-builder version may have changed.',
+    );
     process.exit(1);
   }
 }

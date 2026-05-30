@@ -1,44 +1,20 @@
-import { ipcMain, dialog, app, type BrowserWindow } from 'electron';
+import { ipcMain, app } from 'electron';
 import { IPC } from './constants';
 import { FileManager } from './file-manager';
 import { logger } from './logger';
 
-/** Register all IPC handlers. */
-export function registerIpcHandlers(fileManager: FileManager, mainWindow: BrowserWindow): void {
+export interface AppState {
+  getFileManager(): FileManager;
+}
+
+/** Register all IPC handlers. Must be called once during app startup. */
+export function registerIpcHandlers(state: AppState): void {
   ipcMain.handle(IPC.LOAD_FILE, async () => {
-    return await fileManager.read();
+    return await state.getFileManager().read();
   });
 
   ipcMain.handle(IPC.SAVE_FILE, async (_event, content: string) => {
-    await fileManager.write(content);
-  });
-
-  ipcMain.handle(IPC.SHOW_SAVE_DIALOG, async () => {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      title: 'Save Notes',
-      defaultPath: fileManager.getFilePath(),
-      filters: [
-        { name: 'TreeNote Files', extensions: ['yaml'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-    });
-    if (result.canceled || !result.filePath) return null;
-    fileManager.setFilePath(result.filePath);
-    return result.filePath;
-  });
-
-  ipcMain.handle(IPC.SHOW_OPEN_DIALOG, async () => {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      title: 'Open Notes',
-      filters: [
-        { name: 'TreeNote Files', extensions: ['yaml'] },
-        { name: 'All Files', extensions: ['*'] },
-      ],
-      properties: ['openFile'],
-    });
-    if (result.canceled || result.filePaths.length === 0) return null;
-    fileManager.setFilePath(result.filePaths[0]);
-    return result.filePaths[0];
+    await state.getFileManager().write(content);
   });
 
   ipcMain.handle(IPC.GET_APP_VERSION, () => {
@@ -46,7 +22,7 @@ export function registerIpcHandlers(fileManager: FileManager, mainWindow: Browse
   });
 
   ipcMain.handle(IPC.GET_FILE_PATH, () => {
-    return fileManager.getFilePath();
+    return state.getFileManager().getFilePath();
   });
 
   ipcMain.on(IPC.LOG, (_event, level: string, ...args: unknown[]) => {

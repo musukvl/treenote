@@ -1,4 +1,4 @@
-import { Menu, dialog, type BrowserWindow } from 'electron';
+import { Menu, dialog, app, type BrowserWindow } from 'electron';
 import { IPC } from './constants';
 
 /** Build and set the application menu. */
@@ -77,11 +77,11 @@ export function buildMenu(mainWindow: BrowserWindow): void {
       submenu: [
         {
           label: 'About TreeNote',
-          click: () => {
+          click: (): void => {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'About TreeNote',
-              message: 'TreeNote v1.0.0',
+              message: `TreeNote v${app.getVersion()}`,
               detail: 'A hierarchical notes management application.',
             });
           },

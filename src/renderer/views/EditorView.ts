@@ -53,9 +53,7 @@ export class EditorView extends View {
     this.contentArea.style.display = 'none';
 
     // Listen for active note change
-    this.registerEvent(
-      this.app.events.on('active-note-change', (node) => this.loadNote(node)),
-    );
+    this.registerEvent(this.app.events.on('active-note-change', (node) => this.loadNote(node)));
 
     // Handle external rename
     this.registerEvent(

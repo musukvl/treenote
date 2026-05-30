@@ -1,6 +1,6 @@
 {
   "name": "treenote",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Hierarchical notes management application",
   "author": "Alexey Ryazhskikh",
   "main": "./out/main/index.js",

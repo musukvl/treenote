@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createNoteNode, createWelcomeData, generateId } from '../../../src/renderer/models/NoteNode';
+import {
+  createNoteNode,
+  createWelcomeData,
+  generateId,
+} from '../../../src/renderer/models/NoteNode';
 
 describe('NoteNode', () => {
   describe('generateId', () => {

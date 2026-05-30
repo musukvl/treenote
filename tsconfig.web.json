@@ -15,9 +15,5 @@
       "@renderer/*": ["src/renderer/*"]
     }
   },
-  "include": [
-    "src/renderer/**/*.ts",
-    "src/renderer/**/*.d.ts",
-    "src/preload/*.d.ts"
-  ]
+  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.d.ts", "src/preload/*.d.ts"]
 }

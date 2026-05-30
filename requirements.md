@@ -5,10 +5,10 @@
 Treenote is a notes management application that organizes notes in a hierarchical tree structure.
 
 ## Similar applciations
-* Obsidian - but it has folders to create the tree hierarchy instead of using documents as tree node.
-* Confluense - allows to organize documents in tree as planned, but saas solution, not a single executable.
-* OneNote - single file, but too complex structure.
 
+- Obsidian - but it has folders to create the tree hierarchy instead of using documents as tree node.
+- Confluense - allows to organize documents in tree as planned, but saas solution, not a single executable.
+- OneNote - single file, but too complex structure.
 
 ## Core Features
 
@@ -21,6 +21,7 @@ Treenote is a notes management application that organizes notes in a hierarchica
 - Notes persist between sessions
 - User can change parent of each node by drag-and-drop
 - User can change order of child nodes by drag-and-drop
+
 ### User Interface
 
 - Split-panel layout with tree view and editor

@@ -2,6 +2,7 @@ import { Component } from './Component';
 import type { App } from './App';
 import type { NoteNode, TreeData } from '../models/NoteNode';
 import { createNoteNode, createWelcomeData } from '../models/NoteNode';
+import { validateTreeData } from '../models/validate';
 import { findNodeById, removeNodeById, insertNode } from '../helpers/tree-utils';
 import { debounce } from '../helpers/debounce';
 
@@ -47,8 +48,17 @@ export class Vault extends Component {
     try {
       const raw = await window.api.loadFile();
       if (raw) {
-        this._data = JSON.parse(raw) as TreeData;
-        this.app.logger.debug('Vault', `Loaded ${this.countNodes()} notes.`);
+        const parsed = JSON.parse(raw);
+        const validated = validateTreeData(parsed);
+        if (validated) {
+          this._data = validated;
+          this.app.logger.debug('Vault', `Loaded ${this.countNodes()} notes.`);
+        } else {
+          this.app.logger.error('Vault', 'Invalid data file structure, creating fresh data.');
+          this._data = createWelcomeData();
+          this._dirty = true;
+          await this.save();
+        }
       } else {
         this._data = createWelcomeData();
         this._dirty = true;
@@ -133,7 +143,9 @@ export class Vault extends Component {
     if (success) {
       node.parentId = newParentId;
       const parent = this.findNode(newParentId);
-      const finalIndex = parent ? parent.children.findIndex((child) => child.id === nodeId) : undefined;
+      const finalIndex = parent
+        ? parent.children.findIndex((child) => child.id === nodeId)
+        : undefined;
       this.markDirty();
       this.app.events.trigger('note-moved', nodeId, newParentId, finalIndex);
       this.app.events.trigger('tree-changed');
@@ -152,6 +164,14 @@ export class Vault extends Component {
   }
 
   // --- Persistence ---
+
+  /** Update expansion state for a node and mark dirty for save. */
+  setExpanded(nodeId: string, expanded: boolean): void {
+    const node = this.findNode(nodeId);
+    if (!node) return;
+    node.isExpanded = expanded;
+    this.markDirty();
+  }
 
   private markDirty(): void {
     this._dirty = true;

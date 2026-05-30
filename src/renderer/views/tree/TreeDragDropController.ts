@@ -165,7 +165,9 @@ export class TreeDragDropController {
       return;
     }
 
-    itemEl.addClass(position === 'before' ? 'tree-view__item--drop-before' : 'tree-view__item--drop-after');
+    itemEl.addClass(
+      position === 'before' ? 'tree-view__item--drop-before' : 'tree-view__item--drop-after',
+    );
   }
 
   private getDropPosition(itemEl: HTMLElement, clientY: number): DropPosition {

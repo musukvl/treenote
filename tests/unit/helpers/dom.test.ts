@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createEl, createDiv, createSpan, installDomExtensions } from '../../../src/renderer/helpers/dom';
+import {
+  createEl,
+  createDiv,
+  createSpan,
+  installDomExtensions,
+} from '../../../src/renderer/helpers/dom';
 
 describe('dom helpers', () => {
   beforeAll(() => {

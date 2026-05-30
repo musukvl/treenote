@@ -137,7 +137,7 @@ export class TreeView extends View {
   private toggleExpand(nodeId: string): void {
     const node = this.app.vault.findNode(nodeId);
     if (node) {
-      node.isExpanded = !node.isExpanded;
+      this.app.vault.setExpanded(nodeId, !node.isExpanded);
       this.renderTree();
     }
   }
@@ -153,7 +153,10 @@ export class TreeView extends View {
     input.focus();
     input.select();
 
+    let finished = false;
     const finish = (): void => {
+      if (finished) return;
+      finished = true;
       const newName = input.value.trim() || node.name;
       this.app.vault.renameNote(nodeId, newName);
     };
@@ -161,7 +164,10 @@ export class TreeView extends View {
     input.addEventListener('blur', finish);
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') finish();
-      if (e.key === 'Escape') this.renderTree();
+      if (e.key === 'Escape') {
+        finished = true;
+        this.renderTree();
+      }
     });
   }
 
@@ -308,8 +314,9 @@ export class TreeView extends View {
     }
   }
 
-  override onUnload(): void {
+  override onunload(): void {
     this.dragDropController.dispose();
     this.deleteConfirmationModal.dispose();
+    super.onunload();
   }
 }

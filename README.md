@@ -13,7 +13,6 @@ TreeNote is an Electron-based desktop notes app that organizes notes in a parent
 - YAML-based persistence with auto-save and manual save
 - Cross-platform packaging targets (Windows, macOS, Linux)
 
-
 ## Installation
 
 Download the latest TreeNote-Setup installer for your platform from the
@@ -30,7 +29,6 @@ No additional runtime or dependencies required — TreeNote is a self-contained 
 - Vitest for unit tests
 - ESLint + Prettier
 - `js-yaml` for persistence
-
 
 ### Prerequisites
 
@@ -97,6 +95,39 @@ These scripts install dependencies and build from scratch:
 - `build.sh` – generic build (`npm ci` + `npm run build`)
 - `build-win.sh` – Windows installer + portable packaging via `electron-builder`
 - `build-win.bat` – Windows batch equivalent of `build-win.sh`; outputs to `dist/`
+
+## Local macOS Brew Release
+
+Use the local release script to build and publish a DMG release, then update the Homebrew tap cask
+in a sibling `homebrew-treenote` repository:
+
+```bash
+./release-mac.sh 1.0.3
+```
+
+The script performs the following:
+
+- validates GitHub CLI authentication and repository cleanliness
+- updates `package.json` version locally and commits release version files
+- runs `npm ci` and `npm run build`
+- packages macOS DMG via `electron-builder`
+- normalizes DMG file name to `TreeNote-<version>.dmg`
+- calculates SHA256 checksum
+- creates GitHub release `v<version>` and uploads the DMG
+- creates/syncs local git tag after release publication
+- updates and pushes `../homebrew-treenote/Casks/treenote.rb`
+
+Optional second argument:
+
+- release notes file path (default: `RELEASE_NOTES.md`)
+
+Optional environment variables:
+
+- `TAP_REPO_PATH` (default: `../homebrew-treenote`)
+- `SOURCE_REPO` (default: auto-detected from git remote)
+- `TAP_BRANCH` (default: `main`)
+
+The script is designed to execute the full release flow from local machine without GitHub Actions.
 
 ## Test, Lint, Typecheck
 

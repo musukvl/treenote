@@ -44,9 +44,7 @@ export class App extends Component {
   private registerGlobalHotkeys(): void {
     this.hotkeys.register('Ctrl+S', 'Save', () => this.vault.saveNow());
     this.hotkeys.register('Ctrl+N', 'New Note', () => this.workspace.createNote());
-    this.hotkeys.register('Ctrl+Shift+N', 'New Child Note', () =>
-      this.workspace.createChildNote(),
-    );
+    this.hotkeys.register('Ctrl+Shift+N', 'New Child Note', () => this.workspace.createChildNote());
     this.hotkeys.register('F2', 'Rename Note', () => this.workspace.renameActiveNote());
     this.hotkeys.register('Delete', 'Delete Note', () => this.workspace.deleteActiveNote(), {
       when: 'tree',

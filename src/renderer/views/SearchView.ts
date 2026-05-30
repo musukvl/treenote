@@ -1,6 +1,4 @@
 import { View } from '../core/View';
-import type { App } from '../core/App';
-import type { NoteNode } from '../models/NoteNode';
 import { createDiv, createEl, createSpan } from '../helpers/dom';
 import { flattenTree } from '../helpers/tree-utils';
 
@@ -82,8 +80,7 @@ export class SearchView extends View {
       .filter((node) => node.parentId !== null)
       .filter(
         (node) =>
-          node.name.toLowerCase().includes(query) ||
-          node.content.toLowerCase().includes(query),
+          node.name.toLowerCase().includes(query) || node.content.toLowerCase().includes(query),
       );
 
     this.resultCountEl.textContent = `${results.length} result${results.length !== 1 ? 's' : ''}`;

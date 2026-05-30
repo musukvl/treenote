@@ -1,18 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BrowserWindow } from 'electron';
 import { registerIpcHandlers } from '../../../src/main/ipc-handlers';
 import { IPC } from '../../../src/main/constants';
 import { logger } from '../../../src/main/logger';
 
-const {
-  handleCallbacks,
-  onCallbacks,
-  ipcMainHandle,
-  ipcMainOn,
-  showSaveDialog,
-  showOpenDialog,
-  getVersion,
-} = vi.hoisted(() => {
+const { handleCallbacks, onCallbacks, ipcMainHandle, ipcMainOn, getVersion } = vi.hoisted(() => {
   const localHandleCallbacks = new Map<string, (...args: unknown[]) => unknown>();
   const localOnCallbacks = new Map<string, (...args: unknown[]) => void>();
   const localIpcMainHandle = vi.fn((channel: string, callback: (...args: unknown[]) => unknown) => {
@@ -27,8 +18,6 @@ const {
     onCallbacks: localOnCallbacks,
     ipcMainHandle: localIpcMainHandle,
     ipcMainOn: localIpcMainOn,
-    showSaveDialog: vi.fn(),
-    showOpenDialog: vi.fn(),
     getVersion: vi.fn(() => '1.2.3-test'),
   };
 });
@@ -37,10 +26,6 @@ vi.mock('electron', () => ({
   ipcMain: {
     handle: ipcMainHandle,
     on: ipcMainOn,
-  },
-  dialog: {
-    showSaveDialog,
-    showOpenDialog,
   },
   app: {
     getVersion,
@@ -60,12 +45,7 @@ describe('registerIpcHandlers', () => {
     read: vi.fn(async () => '{"ok":true}'),
     write: vi.fn(async () => {}),
     getFilePath: vi.fn(() => '/tmp/notes.yaml'),
-    setFilePath: vi.fn(),
   };
-
-  const mainWindow = {
-    webContents: { send: vi.fn() },
-  } as unknown as BrowserWindow;
 
   beforeEach(() => {
     handleCallbacks.clear();
@@ -76,17 +56,17 @@ describe('registerIpcHandlers', () => {
     fileManager.write.mockResolvedValue(undefined);
     fileManager.getFilePath.mockReturnValue('/tmp/notes.yaml');
 
-    registerIpcHandlers(fileManager as never, mainWindow);
+    registerIpcHandlers({
+      getFileManager: () => fileManager as never,
+    });
   });
 
   it('registers all expected IPC handlers and listeners', () => {
-    expect(ipcMainHandle).toHaveBeenCalledTimes(6);
+    expect(ipcMainHandle).toHaveBeenCalledTimes(4);
     expect(ipcMainOn).toHaveBeenCalledTimes(1);
 
     expect(handleCallbacks.has(IPC.LOAD_FILE)).toBe(true);
     expect(handleCallbacks.has(IPC.SAVE_FILE)).toBe(true);
-    expect(handleCallbacks.has(IPC.SHOW_SAVE_DIALOG)).toBe(true);
-    expect(handleCallbacks.has(IPC.SHOW_OPEN_DIALOG)).toBe(true);
     expect(handleCallbacks.has(IPC.GET_APP_VERSION)).toBe(true);
     expect(handleCallbacks.has(IPC.GET_FILE_PATH)).toBe(true);
     expect(onCallbacks.has(IPC.LOG)).toBe(true);
@@ -109,50 +89,6 @@ describe('registerIpcHandlers', () => {
     await handler!({}, '{"tree":1}');
 
     expect(fileManager.write).toHaveBeenCalledWith('{"tree":1}');
-  });
-
-  it('returns selected save path and updates file manager path', async () => {
-    showSaveDialog.mockResolvedValue({ canceled: false, filePath: '/tmp/new-notes.yaml' });
-    const handler = handleCallbacks.get(IPC.SHOW_SAVE_DIALOG);
-    expect(handler).toBeTruthy();
-
-    const result = await handler!();
-
-    expect(result).toBe('/tmp/new-notes.yaml');
-    expect(fileManager.setFilePath).toHaveBeenCalledWith('/tmp/new-notes.yaml');
-  });
-
-  it('returns null for canceled save dialog', async () => {
-    showSaveDialog.mockResolvedValue({ canceled: true, filePath: undefined });
-    const handler = handleCallbacks.get(IPC.SHOW_SAVE_DIALOG);
-    expect(handler).toBeTruthy();
-
-    const result = await handler!();
-
-    expect(result).toBeNull();
-    expect(fileManager.setFilePath).not.toHaveBeenCalled();
-  });
-
-  it('returns selected open path and updates file manager path', async () => {
-    showOpenDialog.mockResolvedValue({ canceled: false, filePaths: ['/tmp/opened.yaml'] });
-    const handler = handleCallbacks.get(IPC.SHOW_OPEN_DIALOG);
-    expect(handler).toBeTruthy();
-
-    const result = await handler!();
-
-    expect(result).toBe('/tmp/opened.yaml');
-    expect(fileManager.setFilePath).toHaveBeenCalledWith('/tmp/opened.yaml');
-  });
-
-  it('returns null for canceled open dialog', async () => {
-    showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] });
-    const handler = handleCallbacks.get(IPC.SHOW_OPEN_DIALOG);
-    expect(handler).toBeTruthy();
-
-    const result = await handler!();
-
-    expect(result).toBeNull();
-    expect(fileManager.setFilePath).not.toHaveBeenCalled();
   });
 
   it('returns app version and current file path', async () => {
