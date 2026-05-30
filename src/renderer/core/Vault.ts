@@ -133,7 +133,9 @@ export class Vault extends Component {
     if (success) {
       node.parentId = newParentId;
       const parent = this.findNode(newParentId);
-      const finalIndex = parent ? parent.children.findIndex((child) => child.id === nodeId) : undefined;
+      const finalIndex = parent
+        ? parent.children.findIndex((child) => child.id === nodeId)
+        : undefined;
       this.markDirty();
       this.app.events.trigger('note-moved', nodeId, newParentId, finalIndex);
       this.app.events.trigger('tree-changed');

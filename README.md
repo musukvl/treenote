@@ -13,7 +13,6 @@ TreeNote is an Electron-based desktop notes app that organizes notes in a parent
 - YAML-based persistence with auto-save and manual save
 - Cross-platform packaging targets (Windows, macOS, Linux)
 
-
 ## Installation
 
 Download the latest TreeNote-Setup installer for your platform from the
@@ -30,7 +29,6 @@ No additional runtime or dependencies required — TreeNote is a self-contained 
 - Vitest for unit tests
 - ESLint + Prettier
 - `js-yaml` for persistence
-
 
 ### Prerequisites
 

@@ -202,7 +202,17 @@ describe('TreeView drag-and-drop', () => {
 
     const itemA = getItemEl('a');
     Object.defineProperty(itemA, 'getBoundingClientRect', {
-      value: () => ({ top: 100, height: 40, width: 0, left: 0, right: 0, bottom: 140, x: 0, y: 100, toJSON: () => ({}) }),
+      value: () => ({
+        top: 100,
+        height: 40,
+        width: 0,
+        left: 0,
+        right: 0,
+        bottom: 140,
+        x: 0,
+        y: 100,
+        toJSON: () => ({}),
+      }),
     });
 
     getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));
@@ -218,7 +228,17 @@ describe('TreeView drag-and-drop', () => {
 
     const itemA = getItemEl('a');
     Object.defineProperty(itemA, 'getBoundingClientRect', {
-      value: () => ({ top: 100, height: 40, width: 0, left: 0, right: 0, bottom: 140, x: 0, y: 100, toJSON: () => ({}) }),
+      value: () => ({
+        top: 100,
+        height: 40,
+        width: 0,
+        left: 0,
+        right: 0,
+        bottom: 140,
+        x: 0,
+        y: 100,
+        toJSON: () => ({}),
+      }),
     });
 
     getItemEl('b').dispatchEvent(makeDragEvent('dragstart'));

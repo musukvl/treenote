@@ -16,10 +16,10 @@ First public release of **TreeNote** — a desktop notes application that organi
 
 ## Downloads (Windows)
 
-| Artifact | Description |
-|---|---|
+| Artifact                   | Description                                                                               |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
 | `TreeNote Setup 1.0.0.exe` | **NSIS installer** (recommended): per-user install, adds `treenote` to PATH automatically |
-| `TreeNote 1.0.0.exe` | **Portable executable**: run directly, no installation |
+| `TreeNote 1.0.0.exe`       | **Portable executable**: run directly, no installation                                    |
 
 ### Install via installer
 
@@ -32,15 +32,15 @@ Download `TreeNote 1.0.0.exe`, place it anywhere and run it directly.
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|---|---|
-| `Ctrl+N` | New note |
+| Shortcut       | Action         |
+| -------------- | -------------- |
+| `Ctrl+N`       | New note       |
 | `Ctrl+Shift+N` | New child note |
-| `Ctrl+S` | Save |
-| `Ctrl+F` | Find / search |
-| `Ctrl+1` | Focus tree |
-| `Ctrl+2` | Focus editor |
-| `Ctrl+3` | Focus search |
+| `Ctrl+S`       | Save           |
+| `Ctrl+F`       | Find / search  |
+| `Ctrl+1`       | Focus tree     |
+| `Ctrl+2`       | Focus editor   |
+| `Ctrl+3`       | Focus search   |
 
 ## Notes
 

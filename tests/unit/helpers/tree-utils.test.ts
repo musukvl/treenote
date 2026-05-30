@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { findNodeById, removeNodeById, insertNode, flattenTree, getNodePath, countDescendants } from '../../../src/renderer/helpers/tree-utils';
+import {
+  findNodeById,
+  removeNodeById,
+  insertNode,
+  flattenTree,
+  getNodePath,
+  countDescendants,
+} from '../../../src/renderer/helpers/tree-utils';
 import { createNoteNode } from '../../../src/renderer/models/NoteNode';
 import type { NoteNode } from '../../../src/renderer/models/NoteNode';
 
