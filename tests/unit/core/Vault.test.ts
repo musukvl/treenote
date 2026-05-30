@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { Vault } from '../../../src/renderer/core/Vault';
 import { Events } from '../../../src/renderer/core/Events';
+import type { StorageAdapter } from '../../../src/renderer/core/StorageAdapter';
 import type { NoteNode, TreeData } from '../../../src/renderer/models/NoteNode';
 
 function makeNode(
@@ -52,9 +53,17 @@ describe('Vault.moveNote ordering', () => {
       },
     };
 
-    vault = new Vault(app as never);
+    const mockStorage: StorageAdapter = {
+      load: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue(undefined),
+      getPath: vi.fn().mockResolvedValue('/tmp/test.yaml'),
+    };
+
+    vault = new Vault(app as never, mockStorage);
     vault.load();
     (vault as unknown as { _data: TreeData })._data = createTreeData();
+    // Rebuild internal index after direct data assignment
+    (vault as unknown as { rebuildIndex(): void }).rebuildIndex();
   });
 
   afterEach(() => {

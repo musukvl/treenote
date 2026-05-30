@@ -4,6 +4,8 @@ import { Vault } from './Vault';
 import { Workspace } from './Workspace';
 import { HotkeyManager } from './HotkeyManager';
 import { Logger } from './Logger';
+import { ElectronStorageAdapter } from './ElectronStorageAdapter';
+import type { StorageAdapter } from './StorageAdapter';
 
 /**
  * Root object that orchestrates all subsystems.
@@ -17,14 +19,14 @@ export class App extends Component {
   readonly logger: Logger;
   readonly rootEl: HTMLElement;
 
-  constructor(rootEl: HTMLElement) {
+  constructor(rootEl: HTMLElement, storage?: StorageAdapter) {
     super();
     this.rootEl = rootEl;
 
     // Create subsystems (order matters)
     this.events = new Events();
     this.logger = new Logger(this);
-    this.vault = this.addChild(new Vault(this));
+    this.vault = this.addChild(new Vault(this, storage ?? new ElectronStorageAdapter()));
     this.hotkeys = this.addChild(new HotkeyManager(this));
     this.workspace = this.addChild(new Workspace(this));
   }

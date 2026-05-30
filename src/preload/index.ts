@@ -1,25 +1,18 @@
 import { contextBridge, ipcRenderer } from 'electron';
-
-export interface TreeNoteAPI {
-  loadFile(): Promise<string | null>;
-  saveFile(content: string): Promise<void>;
-  getFilePath(): Promise<string>;
-  getAppVersion(): Promise<string>;
-  log(level: string, ...args: unknown[]): void;
-  onMenuAction(callback: (action: string) => void): () => void;
-}
+import { IpcChannels } from '../shared/ipc';
+import type { TreeNoteAPI } from '../shared/ipc';
 
 contextBridge.exposeInMainWorld('api', {
-  loadFile: (): Promise<string | null> => ipcRenderer.invoke('file:load'),
-  saveFile: (content: string): Promise<void> => ipcRenderer.invoke('file:save', content),
-  getFilePath: (): Promise<string> => ipcRenderer.invoke('file:path'),
-  getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
+  loadFile: (): Promise<string | null> => ipcRenderer.invoke(IpcChannels.LOAD_FILE),
+  saveFile: (content: string): Promise<void> => ipcRenderer.invoke(IpcChannels.SAVE_FILE, content),
+  getFilePath: (): Promise<string> => ipcRenderer.invoke(IpcChannels.GET_FILE_PATH),
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke(IpcChannels.GET_APP_VERSION),
   log: (level: string, ...args: unknown[]): void => {
-    ipcRenderer.send('log:write', level, ...args);
+    ipcRenderer.send(IpcChannels.LOG, level, ...args);
   },
   onMenuAction: (callback: (action: string) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, action: string): void => callback(action);
-    ipcRenderer.on('menu:action', handler);
-    return () => ipcRenderer.removeListener('menu:action', handler);
+    ipcRenderer.on(IpcChannels.MENU_ACTION, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.MENU_ACTION, handler);
   },
 } satisfies TreeNoteAPI);

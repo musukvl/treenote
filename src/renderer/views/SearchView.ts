@@ -1,6 +1,9 @@
 import { View } from '../core/View';
 import { createDiv, createEl, createSpan } from '../helpers/dom';
 import { flattenTree } from '../helpers/tree-utils';
+import { debounce } from '../helpers/debounce';
+
+const SEARCH_DEBOUNCE_MS = 150;
 
 /**
  * Search panel with input and results list.
@@ -10,6 +13,7 @@ export class SearchView extends View {
   private inputEl!: HTMLInputElement;
   private resultsEl!: HTMLElement;
   private resultCountEl!: HTMLElement;
+  private debouncedSearch!: ReturnType<typeof debounce>;
 
   getViewType(): string {
     return 'search';
@@ -30,7 +34,9 @@ export class SearchView extends View {
 
     this.resultsEl = createDiv({ cls: 'search-view__results', parent: this.contentEl });
 
-    this.registerDomEvent(this.inputEl, 'input', () => this.performSearch());
+    this.debouncedSearch = debounce(() => this.performSearch(), SEARCH_DEBOUNCE_MS);
+
+    this.registerDomEvent(this.inputEl, 'input', () => this.debouncedSearch());
 
     this.registerDomEvent(this.inputEl, 'keydown', (e) => {
       if (e.key === 'Escape') {

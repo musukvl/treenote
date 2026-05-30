@@ -52,6 +52,7 @@ describe('SearchView', () => {
   let mockApp: ReturnType<typeof createMockApp>;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     parentEl = document.createElement('div');
     document.body.appendChild(parentEl);
     mockApp = createMockApp();
@@ -62,6 +63,7 @@ describe('SearchView', () => {
   afterEach(() => {
     searchView.unload();
     parentEl.remove();
+    vi.useRealTimers();
   });
 
   it('renders no results and empty count for empty query', () => {
@@ -71,6 +73,7 @@ describe('SearchView', () => {
     const input = parentEl.querySelector('.search-view__input') as HTMLInputElement;
     input.value = '   ';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     const count = parentEl.querySelector('.search-view__count') as HTMLElement;
     const resultItems = parentEl.querySelectorAll('.search-view__result');
@@ -87,6 +90,7 @@ describe('SearchView', () => {
     const input = parentEl.querySelector('.search-view__input') as HTMLInputElement;
     input.value = 'alpha';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     const count = parentEl.querySelector('.search-view__count') as HTMLElement;
     const resultItems = parentEl.querySelectorAll('.search-view__result');
@@ -98,6 +102,7 @@ describe('SearchView', () => {
 
     input.value = 'keyword';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     const snippet = parentEl.querySelector('.search-view__result-snippet') as HTMLElement;
     expect(snippet).toBeTruthy();
@@ -108,6 +113,7 @@ describe('SearchView', () => {
     const input = parentEl.querySelector('.search-view__input') as HTMLInputElement;
     input.value = 'beta';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     const result = parentEl.querySelector('.search-view__result') as HTMLElement;
     result.click();
@@ -120,6 +126,7 @@ describe('SearchView', () => {
     const input = parentEl.querySelector('.search-view__input') as HTMLInputElement;
     input.value = 'beta';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 
@@ -133,6 +140,7 @@ describe('SearchView', () => {
     const input = parentEl.querySelector('.search-view__input') as HTMLInputElement;
     input.value = 'beta';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
 
@@ -144,6 +152,7 @@ describe('SearchView', () => {
     const input = parentEl.querySelector('.search-view__input') as HTMLInputElement;
     input.value = 'beta';
     input.dispatchEvent(new Event('input', { bubbles: true }));
+    vi.advanceTimersByTime(200);
 
     const root = mockApp.vault.root;
     root.children.push(makeNode('c', 'Beta Child', 'root', 'new'));

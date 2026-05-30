@@ -1,4 +1,4 @@
-import type { TreeNoteAPI } from './index';
+import type { TreeNoteAPI } from '../shared/ipc';
 
 declare global {
   interface Window {

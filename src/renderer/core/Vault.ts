@@ -1,9 +1,10 @@
 import { Component } from './Component';
 import type { App } from './App';
+import type { StorageAdapter } from './StorageAdapter';
 import type { NoteNode, TreeData } from '../models/NoteNode';
 import { createNoteNode, createWelcomeData } from '../models/NoteNode';
 import { validateTreeData } from '../models/validate';
-import { findNodeById, removeNodeById, insertNode } from '../helpers/tree-utils';
+import { removeNodeById, insertNode } from '../helpers/tree-utils';
 import { debounce } from '../helpers/debounce';
 
 const AUTO_SAVE_DELAY = 2000;
@@ -14,13 +15,16 @@ const AUTO_SAVE_DELAY = 2000;
  */
 export class Vault extends Component {
   private app: App;
+  private storage: StorageAdapter;
   private _data: TreeData | null = null;
   private _dirty = false;
   private _debouncedSave: ReturnType<typeof debounce>;
+  private _index: Map<string, NoteNode> = new Map();
 
-  constructor(app: App) {
+  constructor(app: App, storage: StorageAdapter) {
     super();
     this.app = app;
+    this.storage = storage;
     this._debouncedSave = debounce(() => this.save(), AUTO_SAVE_DELAY);
   }
 
@@ -46,7 +50,7 @@ export class Vault extends Component {
   async loadData(): Promise<void> {
     this.app.logger.debug('Vault', 'Loading data...');
     try {
-      const raw = await window.api.loadFile();
+      const raw = await this.storage.load();
       if (raw) {
         const parsed = JSON.parse(raw);
         const validated = validateTreeData(parsed);
@@ -65,10 +69,12 @@ export class Vault extends Component {
         await this.save();
         this.app.logger.debug('Vault', 'Created welcome note.');
       }
+      this.rebuildIndex();
       this.app.events.trigger('data-loaded', this._data);
     } catch (err) {
       this.app.logger.error('Vault', 'Failed to load data', err);
       this._data = createWelcomeData();
+      this.rebuildIndex();
       this.app.events.trigger('data-loaded', this._data);
     }
   }
@@ -80,6 +86,7 @@ export class Vault extends Component {
     if (!parent) throw new Error(`Parent node not found: ${parentId}`);
     const node = createNoteNode(name, parentId);
     parent.children.push(node);
+    this.indexNode(node);
     this.markDirty();
     this.app.events.trigger('note-created', node);
     this.app.events.trigger('tree-changed');
@@ -108,8 +115,10 @@ export class Vault extends Component {
   deleteNote(nodeId: string): boolean {
     if (!this._data) return false;
     if (nodeId === this._data.root.id) return false;
+    const node = this.findNode(nodeId);
     const removed = removeNodeById(this._data.root, nodeId);
     if (removed) {
+      if (node) this.unindexNode(node);
       this.markDirty();
       this.app.events.trigger('note-deleted', nodeId);
       this.app.events.trigger('tree-changed');
@@ -160,7 +169,29 @@ export class Vault extends Component {
 
   findNode(nodeId: string): NoteNode | null {
     if (!this._data) return null;
-    return findNodeById(this._data.root, nodeId);
+    return this._index.get(nodeId) ?? null;
+  }
+
+  // --- Index ---
+
+  private rebuildIndex(): void {
+    this._index.clear();
+    if (!this._data) return;
+    const walk = (node: NoteNode): void => {
+      this._index.set(node.id, node);
+      for (const child of node.children) walk(child);
+    };
+    walk(this._data.root);
+  }
+
+  private indexNode(node: NoteNode): void {
+    this._index.set(node.id, node);
+    for (const child of node.children) this.indexNode(child);
+  }
+
+  private unindexNode(node: NoteNode): void {
+    this._index.delete(node.id);
+    for (const child of node.children) this.unindexNode(child);
   }
 
   // --- Persistence ---
@@ -191,7 +222,7 @@ export class Vault extends Component {
     try {
       this._data.metadata.updatedAt = Date.now();
       const json = JSON.stringify(this._data);
-      await window.api.saveFile(json);
+      await this.storage.save(json);
       this._dirty = false;
       this.app.events.trigger('save-status-change', 'saved');
       this.app.events.trigger('data-saved');
@@ -214,8 +245,11 @@ export class Vault extends Component {
   }
 
   isDescendant(ancestorId: string, nodeId: string): boolean {
-    const ancestor = this.findNode(ancestorId);
-    if (!ancestor) return false;
-    return !!findNodeById(ancestor, nodeId);
+    let current = this.findNode(nodeId);
+    while (current) {
+      if (current.id === ancestorId) return true;
+      current = current.parentId ? this.findNode(current.parentId) : null;
+    }
+    return false;
   }
 }
