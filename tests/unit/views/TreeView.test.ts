@@ -378,3 +378,29 @@ describe('TreeView delete confirmation', () => {
     expect(document.querySelector('.tree-view__modal-overlay')).toBeNull();
   });
 });
+
+describe('TreeView lifecycle cleanup', () => {
+  it('should dispose drag-drop controller and modal on unload', () => {
+    const parentEl = document.createElement('div');
+    document.body.appendChild(parentEl);
+    const mockApp = createMockApp();
+    const treeView = new TreeView(mockApp as never, parentEl);
+    treeView.load();
+
+    // Access private fields via any cast to spy on dispose
+    const controller = (treeView as unknown as { dragDropController: { dispose: () => void } })
+      .dragDropController;
+    const modal = (
+      treeView as unknown as { deleteConfirmationModal: { dispose: () => void } }
+    ).deleteConfirmationModal;
+
+    const controllerDisposeSpy = vi.spyOn(controller, 'dispose');
+    const modalDisposeSpy = vi.spyOn(modal, 'dispose');
+
+    treeView.unload();
+
+    expect(controllerDisposeSpy).toHaveBeenCalled();
+    expect(modalDisposeSpy).toHaveBeenCalled();
+    parentEl.remove();
+  });
+});

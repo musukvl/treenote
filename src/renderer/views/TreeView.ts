@@ -308,8 +308,9 @@ export class TreeView extends View {
     }
   }
 
-  override onUnload(): void {
+  override onunload(): void {
     this.dragDropController.dispose();
     this.deleteConfirmationModal.dispose();
+    super.onunload();
   }
 }
