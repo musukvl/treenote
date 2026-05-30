@@ -1,4 +1,4 @@
-import { readFile, writeFile, rename, mkdir } from 'fs/promises';
+import { readFile, writeFile, rename, mkdir, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import { dirname } from 'path';
 import yaml from 'js-yaml';
@@ -60,12 +60,14 @@ export class FileManager {
     });
 
     // Atomic write: write to temp file, then rename
-    const tmpPath = this.filePath + '.tmp';
+    const tmpPath = `${this.filePath}.tmp.${Date.now()}`;
     try {
       await writeFile(tmpPath, yamlContent, 'utf-8');
       await rename(tmpPath, this.filePath);
       logger.debug(`File saved: ${this.filePath}`);
     } catch (err) {
+      // Clean up stale temp file on failure
+      await unlink(tmpPath).catch(() => {});
       logger.error(`Failed to save file: ${this.filePath}`, err);
       throw err;
     }
