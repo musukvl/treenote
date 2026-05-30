@@ -71,6 +71,10 @@ function createMockApp() {
     createNote: vi.fn(),
     renameNote: vi.fn(),
     deleteNote: vi.fn(),
+    setExpanded: vi.fn((id: string, expanded: boolean) => {
+      const node = findNodeById(root, id);
+      if (node) node.isExpanded = expanded;
+    }),
   };
 
   const workspace = {

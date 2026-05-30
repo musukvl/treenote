@@ -137,7 +137,7 @@ export class TreeView extends View {
   private toggleExpand(nodeId: string): void {
     const node = this.app.vault.findNode(nodeId);
     if (node) {
-      node.isExpanded = !node.isExpanded;
+      this.app.vault.setExpanded(nodeId, !node.isExpanded);
       this.renderTree();
     }
   }

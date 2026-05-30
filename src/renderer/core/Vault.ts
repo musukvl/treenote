@@ -155,6 +155,14 @@ export class Vault extends Component {
 
   // --- Persistence ---
 
+  /** Update expansion state for a node and mark dirty for save. */
+  setExpanded(nodeId: string, expanded: boolean): void {
+    const node = this.findNode(nodeId);
+    if (!node) return;
+    node.isExpanded = expanded;
+    this.markDirty();
+  }
+
   private markDirty(): void {
     this._dirty = true;
     this.app.events.trigger('save-status-change', 'unsaved');
