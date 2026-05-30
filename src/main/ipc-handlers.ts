@@ -3,31 +3,40 @@ import { IPC } from './constants';
 import { FileManager } from './file-manager';
 import { logger } from './logger';
 
-/** Register all IPC handlers. */
-export function registerIpcHandlers(fileManager: FileManager, mainWindow: BrowserWindow): void {
+export interface AppState {
+  getFileManager(): FileManager;
+  getMainWindow(): BrowserWindow | null;
+}
+
+/** Register all IPC handlers. Must be called once during app startup. */
+export function registerIpcHandlers(state: AppState): void {
   ipcMain.handle(IPC.LOAD_FILE, async () => {
-    return await fileManager.read();
+    return await state.getFileManager().read();
   });
 
   ipcMain.handle(IPC.SAVE_FILE, async (_event, content: string) => {
-    await fileManager.write(content);
+    await state.getFileManager().write(content);
   });
 
   ipcMain.handle(IPC.SHOW_SAVE_DIALOG, async () => {
+    const mainWindow = state.getMainWindow();
+    if (!mainWindow) return null;
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Save Notes',
-      defaultPath: fileManager.getFilePath(),
+      defaultPath: state.getFileManager().getFilePath(),
       filters: [
         { name: 'TreeNote Files', extensions: ['yaml'] },
         { name: 'All Files', extensions: ['*'] },
       ],
     });
     if (result.canceled || !result.filePath) return null;
-    fileManager.setFilePath(result.filePath);
+    state.getFileManager().setFilePath(result.filePath);
     return result.filePath;
   });
 
   ipcMain.handle(IPC.SHOW_OPEN_DIALOG, async () => {
+    const mainWindow = state.getMainWindow();
+    if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, {
       title: 'Open Notes',
       filters: [
@@ -37,7 +46,7 @@ export function registerIpcHandlers(fileManager: FileManager, mainWindow: Browse
       properties: ['openFile'],
     });
     if (result.canceled || result.filePaths.length === 0) return null;
-    fileManager.setFilePath(result.filePaths[0]);
+    state.getFileManager().setFilePath(result.filePaths[0]);
     return result.filePaths[0];
   });
 
@@ -46,7 +55,7 @@ export function registerIpcHandlers(fileManager: FileManager, mainWindow: Browse
   });
 
   ipcMain.handle(IPC.GET_FILE_PATH, () => {
-    return fileManager.getFilePath();
+    return state.getFileManager().getFilePath();
   });
 
   ipcMain.on(IPC.LOG, (_event, level: string, ...args: unknown[]) => {

@@ -76,7 +76,10 @@ describe('registerIpcHandlers', () => {
     fileManager.write.mockResolvedValue(undefined);
     fileManager.getFilePath.mockReturnValue('/tmp/notes.yaml');
 
-    registerIpcHandlers(fileManager as never, mainWindow);
+    registerIpcHandlers({
+      getFileManager: () => fileManager as never,
+      getMainWindow: () => mainWindow,
+    });
   });
 
   it('registers all expected IPC handlers and listeners', () => {
