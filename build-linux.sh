@@ -35,6 +35,11 @@ if [[ ${#appimages[@]} -eq 0 ]]; then
 fi
 
 APPIMAGE="${appimages[0]}"
+for candidate in "${appimages[@]}"; do
+  if [[ "$candidate" -nt "$APPIMAGE" ]]; then
+    APPIMAGE="$candidate"
+  fi
+done
 
 echo "Installing AppImage..."
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"

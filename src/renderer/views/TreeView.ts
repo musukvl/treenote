@@ -46,7 +46,12 @@ export class TreeView extends View {
     this.renderTree();
 
     this.registerEvent(this.app.events.on('tree-changed', () => this.renderTree()));
-    this.registerEvent(this.app.events.on('data-loaded', () => this.renderTree()));
+    this.registerEvent(
+      this.app.events.on('data-loaded', () => {
+        this.selectedNodeId = null;
+        this.renderTree();
+      }),
+    );
     this.registerDomEvent(this.treeContainerEl, 'keydown', this.handleKeydown.bind(this));
     this.registerDomEvent(this.treeContainerEl, 'contextmenu', this.handleContextMenu.bind(this));
   }

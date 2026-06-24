@@ -69,6 +69,9 @@ export class App extends Component {
         case 'new-child-note':
           this.workspace.createChildNote();
           break;
+        case 'open-file':
+          void this.openFile();
+          break;
         case 'save':
           this.vault.saveNow();
           break;
@@ -88,5 +91,14 @@ export class App extends Component {
     });
 
     this.register(unsubscribe);
+  }
+
+  private async openFile(): Promise<void> {
+    await this.vault.saveNow();
+    const filePath = await window.api.openFile();
+    if (!filePath) return;
+
+    await this.vault.loadData();
+    this.events.trigger('active-note-change', null);
   }
 }

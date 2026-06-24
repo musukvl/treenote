@@ -3,24 +3,26 @@ import { registerIpcHandlers } from '../../../src/main/ipc-handlers';
 import { IPC } from '../../../src/main/constants';
 import { logger } from '../../../src/main/logger';
 
-const { handleCallbacks, onCallbacks, ipcMainHandle, ipcMainOn, getVersion } = vi.hoisted(() => {
-  const localHandleCallbacks = new Map<string, (...args: unknown[]) => unknown>();
-  const localOnCallbacks = new Map<string, (...args: unknown[]) => void>();
-  const localIpcMainHandle = vi.fn((channel: string, callback: (...args: unknown[]) => unknown) => {
-    localHandleCallbacks.set(channel, callback);
-  });
-  const localIpcMainOn = vi.fn((channel: string, callback: (...args: unknown[]) => void) => {
-    localOnCallbacks.set(channel, callback);
-  });
+const { handleCallbacks, onCallbacks, ipcMainHandle, ipcMainOn, getVersion, showOpenDialog } =
+  vi.hoisted(() => {
+    const localHandleCallbacks = new Map<string, (...args: unknown[]) => unknown>();
+    const localOnCallbacks = new Map<string, (...args: unknown[]) => void>();
+    const localIpcMainHandle = vi.fn((channel: string, callback: (...args: unknown[]) => unknown) => {
+      localHandleCallbacks.set(channel, callback);
+    });
+    const localIpcMainOn = vi.fn((channel: string, callback: (...args: unknown[]) => void) => {
+      localOnCallbacks.set(channel, callback);
+    });
 
-  return {
-    handleCallbacks: localHandleCallbacks,
-    onCallbacks: localOnCallbacks,
-    ipcMainHandle: localIpcMainHandle,
-    ipcMainOn: localIpcMainOn,
-    getVersion: vi.fn(() => '1.2.3-test'),
-  };
-});
+    return {
+      handleCallbacks: localHandleCallbacks,
+      onCallbacks: localOnCallbacks,
+      ipcMainHandle: localIpcMainHandle,
+      ipcMainOn: localIpcMainOn,
+      getVersion: vi.fn(() => '1.2.3-test'),
+      showOpenDialog: vi.fn(),
+    };
+  });
 
 vi.mock('electron', () => ({
   ipcMain: {
@@ -29,6 +31,9 @@ vi.mock('electron', () => ({
   },
   app: {
     getVersion,
+  },
+  dialog: {
+    showOpenDialog,
   },
 }));
 
@@ -45,6 +50,8 @@ describe('registerIpcHandlers', () => {
     read: vi.fn(async () => '{"ok":true}'),
     write: vi.fn(async () => {}),
     getFilePath: vi.fn(() => '/tmp/notes.yaml'),
+    setFilePath: vi.fn(),
+    ensureFileExists: vi.fn(async () => {}),
   };
 
   beforeEach(() => {
@@ -55,6 +62,9 @@ describe('registerIpcHandlers', () => {
     fileManager.read.mockResolvedValue('{"ok":true}');
     fileManager.write.mockResolvedValue(undefined);
     fileManager.getFilePath.mockReturnValue('/tmp/notes.yaml');
+    fileManager.setFilePath.mockReturnValue(undefined);
+    fileManager.ensureFileExists.mockResolvedValue(undefined);
+    showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] });
 
     registerIpcHandlers({
       getFileManager: () => fileManager as never,
@@ -62,10 +72,11 @@ describe('registerIpcHandlers', () => {
   });
 
   it('registers all expected IPC handlers and listeners', () => {
-    expect(ipcMainHandle).toHaveBeenCalledTimes(4);
+    expect(ipcMainHandle).toHaveBeenCalledTimes(5);
     expect(ipcMainOn).toHaveBeenCalledTimes(1);
 
     expect(handleCallbacks.has(IPC.LOAD_FILE)).toBe(true);
+    expect(handleCallbacks.has(IPC.OPEN_FILE)).toBe(true);
     expect(handleCallbacks.has(IPC.SAVE_FILE)).toBe(true);
     expect(handleCallbacks.has(IPC.GET_APP_VERSION)).toBe(true);
     expect(handleCallbacks.has(IPC.GET_FILE_PATH)).toBe(true);
@@ -80,6 +91,41 @@ describe('registerIpcHandlers', () => {
 
     expect(fileManager.read).toHaveBeenCalledTimes(1);
     expect(result).toBe('{"ok":true}');
+  });
+
+  it('returns null when open file dialog is canceled', async () => {
+    const handler = handleCallbacks.get(IPC.OPEN_FILE);
+    expect(handler).toBeTruthy();
+
+    const result = await handler!();
+
+    expect(showOpenDialog).toHaveBeenCalledWith({
+      title: 'Open TreeNote File',
+      properties: ['openFile'],
+      filters: [
+        { name: 'TreeNote Files', extensions: ['yaml', 'yml'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+    expect(result).toBeNull();
+    expect(fileManager.setFilePath).not.toHaveBeenCalled();
+    expect(fileManager.ensureFileExists).not.toHaveBeenCalled();
+  });
+
+  it('opens selected file and updates file manager path', async () => {
+    const handler = handleCallbacks.get(IPC.OPEN_FILE);
+    expect(handler).toBeTruthy();
+    showOpenDialog.mockResolvedValue({
+      canceled: false,
+      filePaths: ['/tmp/selected-notes.yaml'],
+    });
+
+    const result = await handler!();
+
+    expect(result).toBe('/tmp/selected-notes.yaml');
+    expect(fileManager.setFilePath).toHaveBeenCalledWith('/tmp/selected-notes.yaml');
+    expect(fileManager.ensureFileExists).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith('Opened data file: /tmp/selected-notes.yaml');
   });
 
   it('saves file content through file manager', async () => {

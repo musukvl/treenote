@@ -21,6 +21,11 @@ export function buildMenu(mainWindow: BrowserWindow): void {
           accelerator: 'CmdOrCtrl+Shift+N',
           click: () => sendAction('new-child-note'),
         },
+        {
+          label: 'Open File...',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => sendAction('open-file'),
+        },
         { type: 'separator' },
         {
           label: 'Save',

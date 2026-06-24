@@ -4,6 +4,7 @@
  */
 export const IpcChannels = {
   LOAD_FILE: 'file:load',
+  OPEN_FILE: 'file:open',
   SAVE_FILE: 'file:save',
   GET_APP_VERSION: 'app:version',
   GET_FILE_PATH: 'file:path',
@@ -16,6 +17,7 @@ export type IpcChannel = (typeof IpcChannels)[keyof typeof IpcChannels];
 /** Type-safe API contract exposed via contextBridge. */
 export interface TreeNoteAPI {
   loadFile(): Promise<string | null>;
+  openFile(): Promise<string | null>;
   saveFile(content: string): Promise<void>;
   getFilePath(): Promise<string>;
   getAppVersion(): Promise<string>;
