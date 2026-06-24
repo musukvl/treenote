@@ -5,6 +5,7 @@
 set -euo pipefail
 
 export CSC_IDENTITY_AUTO_DISCOVERY=false
+PACKAGE_OUTPUT_DIR="dist"
 
 echo "=== TreeNote Windows Build ==="
 
@@ -14,8 +15,12 @@ npm ci
 echo "Building..."
 npm run build
 
+echo "Cleaning stale package artifacts..."
+rm -f out/*.exe
+rm -rf out/win-unpacked
+
 echo "Packaging Windows executable..."
-npx electron-builder --win --config electron-builder.yml --config.directories.output=out
+npx electron-builder --win --config electron-builder.yml --config.directories.output="$PACKAGE_OUTPUT_DIR"
 
 echo "=== Build complete ==="
-echo "Executable is in out/ directory"
+echo "Executable is in $PACKAGE_OUTPUT_DIR/ directory"

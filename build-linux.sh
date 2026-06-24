@@ -26,6 +26,8 @@ npm run build
 echo "Cleaning stale package artifacts..."
 rm -f "$APP_BUILD_DIR"/*.AppImage
 rm -rf "$APP_BUILD_DIR"/linux-unpacked
+rm -f "$PACKAGE_OUTPUT_DIR"/*.AppImage
+rm -rf "$PACKAGE_OUTPUT_DIR"/linux-unpacked
 
 echo "Packaging Linux AppImage..."
 npx electron-builder --linux AppImage --config electron-builder.yml --config.directories.output="$PACKAGE_OUTPUT_DIR"
