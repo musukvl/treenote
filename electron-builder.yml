@@ -8,7 +8,6 @@ files:
 win:
   target: [nsis, portable]
   icon: resources/icon.ico
-  signAndEditExecutable: false
 nsis:
   oneClick: true
   perMachine: false
@@ -22,3 +21,6 @@ mac:
 linux:
   target: [AppImage, deb]
   icon: resources/icon.png
+  desktop:
+    entry:
+      StartupWMClass: com.treenote.app

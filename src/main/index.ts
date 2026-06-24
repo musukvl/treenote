@@ -6,6 +6,14 @@ import { FileManager } from './file-manager';
 import { DATA_FILE_NAME } from './constants';
 import { logger } from './logger';
 
+const LINUX_DESKTOP_NAME = 'com.treenote.app.desktop';
+
+app.setName('TreeNote');
+
+if (process.platform === 'linux') {
+  app.setDesktopName(LINUX_DESKTOP_NAME);
+}
+
 let mainWindow: BrowserWindow | null = null;
 let fileManager: FileManager | null = null;
 

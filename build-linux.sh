@@ -7,7 +7,8 @@ set -euo pipefail
 APP_NAME="TreeNote"
 CLI_NAME="treenote"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUTPUT_DIR="$ROOT_DIR/out"
+APP_BUILD_DIR="$ROOT_DIR/out"
+PACKAGE_OUTPUT_DIR="$ROOT_DIR/dist"
 INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/treenote"
 BIN_DIR="$HOME/.local/bin"
 
@@ -22,15 +23,19 @@ npm ci
 echo "Building..."
 npm run build
 
+echo "Cleaning stale package artifacts..."
+rm -f "$APP_BUILD_DIR"/*.AppImage
+rm -rf "$APP_BUILD_DIR"/linux-unpacked
+
 echo "Packaging Linux AppImage..."
-npx electron-builder --linux AppImage --config electron-builder.yml --config.directories.output="$OUTPUT_DIR"
+npx electron-builder --linux AppImage --config electron-builder.yml --config.directories.output="$PACKAGE_OUTPUT_DIR"
 
 shopt -s nullglob
-appimages=("$OUTPUT_DIR"/"$APP_NAME"-*.AppImage "$OUTPUT_DIR"/*.AppImage)
+appimages=("$PACKAGE_OUTPUT_DIR"/"$APP_NAME"-*.AppImage "$PACKAGE_OUTPUT_DIR"/*.AppImage)
 shopt -u nullglob
 
 if [[ ${#appimages[@]} -eq 0 ]]; then
-  echo "No AppImage was created in $OUTPUT_DIR" >&2
+  echo "No AppImage was created in $PACKAGE_OUTPUT_DIR" >&2
   exit 1
 fi
 
