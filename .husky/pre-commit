@@ -1,0 +1,3 @@
+# Pre-commit validations: ESLint + Prettier on staged files, then a full typecheck.
+npx lint-staged
+npm run typecheck
