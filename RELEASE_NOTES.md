@@ -1,33 +1,25 @@
-# TreeNote v1.0.4 Release Notes
+# TreeNote v1.0.5 Release Notes
 
 ## Overview
 
-Quality and reliability release focused on fixing bugs identified in the maturity audit. No new features — all changes improve correctness, robustness, and maintainability.
+Toolchain modernization release. No new product features — upgrades packaging and developer tooling to current stable versions, and adds pre-commit quality gates.
 
-## Bug Fixes
+## Changes
 
-- **Lint passes clean**: added ESLint config for CommonJS scripts, removed unused imports, applied Prettier formatting.
-- **About dialog shows correct version**: replaced hardcoded `v1.0.0` with dynamic `app.getVersion()`.
-- **TreeView lifecycle cleanup works**: renamed `onUnload()` → `onunload()` so drag-drop controller and delete modal are properly disposed.
-- **Inline rename no longer fires twice**: added guard to prevent Enter + blur from calling `renameNote` a second time; Escape no longer triggers rename.
-- **IPC handlers registered once**: moved IPC registration from per-window to app startup, preventing duplicate handler errors on macOS window recreation.
-- **Expansion state persists**: collapsing/expanding tree nodes now marks the vault dirty and triggers auto-save.
-- **Data file validated on load**: basic schema validation prevents crashes from corrupted or manually-edited files.
-- **Atomic writes use unique temp paths**: eliminates potential for stale `.tmp` files on overlapping or failed saves.
+- **Electron Builder**: moved from `27.0.0-alpha.5` to stable `26.15.3` (no more pre-release packaging toolchain).
+- **TypeScript**: upgraded to `6.0` (removed deprecated `baseUrl` from `tsconfig.web.json`).
+- **ESLint**: upgraded to `10` (fixed `no-useless-assignment` in tree drag-and-drop).
+- **js-yaml**: upgraded to `5` (named imports; empty data files handled safely).
+- **Pre-commit hooks**: husky + lint-staged run ESLint, Prettier, and typecheck before every commit.
+- **Node engines**: require Node `>=22.12.0`.
 
-## Cleanup
+## Downloads (Windows)
 
-- Removed unused `showSaveDialog` / `showOpenDialog` IPC APIs that were exposed but never consumed by the renderer.
+| Artifact               | Description         |
+| ---------------------- | ------------------- |
+| `TreeNote Setup *.exe` | NSIS installer      |
+| `TreeNote *.exe`       | Portable executable |
 
 ## Downloads (macOS)
 
-| Artifact | Description |
-|----------|-------------|
-| `TreeNote-1.0.4.dmg` | macOS disk image (Apple Silicon + Intel) |
-
-### Install via Homebrew
-
-```bash
-brew tap nicegoodthings/treenote
-brew install --cask treenote
-```
+See previous release notes for Homebrew / DMG install paths when a macOS build is published for this version.
