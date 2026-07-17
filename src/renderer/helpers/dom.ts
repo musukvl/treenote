@@ -43,22 +43,22 @@ export function createSpan(options?: CreateElOptions): HTMLSpanElement {
  */
 export function installDomExtensions(): void {
   if (!HTMLElement.prototype.empty) {
-    HTMLElement.prototype.empty = function () {
+    HTMLElement.prototype.empty = function (): void {
       while (this.firstChild) this.removeChild(this.firstChild);
     };
   }
   if (!HTMLElement.prototype.addClass) {
-    HTMLElement.prototype.addClass = function (...cls: string[]) {
+    HTMLElement.prototype.addClass = function (...cls: string[]): void {
       this.classList.add(...cls);
     };
   }
   if (!HTMLElement.prototype.removeClass) {
-    HTMLElement.prototype.removeClass = function (...cls: string[]) {
+    HTMLElement.prototype.removeClass = function (...cls: string[]): void {
       this.classList.remove(...cls);
     };
   }
   if (!HTMLElement.prototype.toggleClass) {
-    HTMLElement.prototype.toggleClass = function (cls: string, force?: boolean) {
+    HTMLElement.prototype.toggleClass = function (cls: string, force?: boolean): void {
       this.classList.toggle(cls, force);
     };
   }

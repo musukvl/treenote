@@ -22,8 +22,8 @@ export class TreeView extends View {
     this.dragDropController = new TreeDragDropController({
       app: this.app,
       nodeElements: this.nodeElements,
-      toggleExpand: (nodeId) => this.toggleExpand(nodeId),
-      selectNode: (nodeId) => this.selectNode(nodeId),
+      toggleExpand: (nodeId: string): void => this.toggleExpand(nodeId),
+      selectNode: (nodeId: string): void => this.selectNode(nodeId),
     });
   }
 
@@ -240,10 +240,10 @@ export class TreeView extends View {
     menu.style.top = `${y}px`;
 
     const items = [
-      { label: 'New Note', action: () => this.createSiblingNote() },
-      { label: 'New Child Note', action: () => this.createChildNote() },
-      { label: 'Rename', action: () => this.renameSelectedNote() },
-      { label: 'Delete', action: () => void this.deleteSelectedNote() },
+      { label: 'New Note', action: (): void => this.createSiblingNote() },
+      { label: 'New Child Note', action: (): void => this.createChildNote() },
+      { label: 'Rename', action: (): void => this.renameSelectedNote() },
+      { label: 'Delete', action: (): void => void this.deleteSelectedNote() },
     ];
 
     for (const item of items) {
