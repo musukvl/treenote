@@ -20,7 +20,7 @@ The UI is built with TypeScript and direct DOM APIs instead of a component frame
 | ------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `package.json`                  | Defines npm scripts, dependencies, package metadata, and the Electron entry point. | Drives `electron-vite`, `electron-builder`, Vitest, ESLint, Prettier, TypeScript.                                                             |
 | `electron.vite.config.ts`       | Defines separate build inputs for main, preload, and renderer bundles.             | Uses `src/main/index.ts`, `src/preload/index.ts`, `src/renderer/index.html`.                                                                  |
-| `electron-builder.yml`          | Defines platform packaging outputs.                                                | Consumes `out/**/*`, `resources/icon.ico`, `resources/icon.icns`, `resources/installer/path-env.nsh`; expects `resources/icon.png` for Linux. |
+| `electron-builder.yml`          | Defines platform packaging outputs and Electron fuses.                             | Consumes `out/**/*`, `resources/icon.ico`, `resources/icon.icns`, `resources/installer/path-env.nsh`; expects `resources/icon.png` for Linux. |
 | `build.sh`                      | Generic from-scratch app build.                                                    | Runs `npm ci` and `npm run build`.                                                                                                            |
 | `build-win.sh`, `build-win.bat` | Windows packaging scripts.                                                         | Run Electron build and Windows `electron-builder` packaging.                                                                                  |
 | `release-mac.sh`                | Local macOS release automation.                                                    | Uses GitHub CLI, `npm`, `electron-builder`, `dist`, and sibling Homebrew tap repository.                                                      |
@@ -42,7 +42,7 @@ The build chain starts from `package.json` scripts. `npm run build` invokes `ele
 - Preload bundle from `src/preload/index.ts` into `out/preload`.
 - Renderer bundle from `src/renderer/index.html` into `out/renderer`.
 
-Packaging is handled by `electron-builder.yml`. The builder packages files from `out/**/*` and adds platform resources from `resources`. Windows packaging creates NSIS and portable targets. macOS packaging creates a DMG. Linux packaging is configured for AppImage and deb.
+Packaging is handled by `electron-builder.yml`. The builder packages files from `out/**/*` and adds platform resources from `resources`. Windows packaging creates NSIS and portable targets. macOS packaging creates a DMG. Linux packaging is configured for AppImage and deb. Packaged binaries flip Electron fuses (`runAsNode` off, ASAR integrity on, `onlyLoadAppFromAsar` on) via `electronFuses`.
 
 The root `build.sh` script installs dependencies and builds the application, but does not package an installer. `build-win.sh` installs dependencies, builds, and packages Windows artifacts. The local `release-mac.sh` script performs a fuller release flow: version update, dependency install, build, DMG packaging, GitHub release creation, tag sync, and Homebrew cask update.
 
@@ -61,14 +61,16 @@ The root `build.sh` script installs dependencies and builds the application, but
 
 ## Main Process Components
 
-| Component                  | Responsibility                                                         | Key relationships                                                                                |
-| -------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `src/main/index.ts`        | Electron app lifecycle, window creation, startup data path resolution. | Creates `BrowserWindow`; creates `FileManager`; registers IPC; builds menu.                      |
-| `src/main/file-manager.ts` | YAML persistence and atomic writes.                                    | Reads and writes the selected data file; converts YAML on disk to JSON over IPC; uses `js-yaml`. |
-| `src/main/ipc-handlers.ts` | IPC endpoint registration.                                             | Bridges preload requests to `FileManager`, Electron dialogs, `app.getVersion()`, and logger.     |
-| `src/main/menu.ts`         | Native menu definition.                                                | Sends renderer actions over `menu:action`.                                                       |
-| `src/main/constants.ts`    | IPC channel names and default data file name.                          | Imported by main modules.                                                                        |
-| `src/main/logger.ts`       | Main process stdout/stderr logging.                                    | Receives renderer log messages over IPC.                                                         |
+| Component                       | Responsibility                                                         | Key relationships                                                                                |
+| ------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `src/main/index.ts`             | Electron app lifecycle, window creation, startup data path resolution. | Creates `BrowserWindow`; creates `FileManager`; registers IPC; builds menu.                      |
+| `src/main/navigation-guards.ts` | Deny unexpected navigation and `window.open`.                          | Registered on `web-contents-created` before windows open.                                        |
+| `src/main/file-manager.ts`      | YAML persistence and atomic writes.                                    | Reads and writes the selected data file; converts YAML on disk to JSON over IPC; uses `js-yaml`. |
+| `src/main/ipc-handlers.ts`      | IPC endpoint registration with sender and payload validation.          | Bridges preload requests to `FileManager`, Electron dialogs, `app.getVersion()`, and logger.     |
+| `src/main/ipc-security.ts`      | Trusted IPC sender origin checks.                                      | Used by IPC handlers before privileged work.                                                     |
+| `src/main/menu.ts`              | Native menu definition.                                                | Sends renderer actions over `menu:action`.                                                       |
+| `src/main/constants.ts`         | IPC channel names and default data file name.                          | Imported by main modules.                                                                        |
+| `src/main/logger.ts`            | Main process stdout/stderr logging.                                    | Receives renderer log messages over IPC.                                                         |
 
 ## Preload Boundary
 

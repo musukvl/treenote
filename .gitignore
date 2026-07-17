@@ -17,5 +17,5 @@ nul
 log.txt
 publish/
 *.tsbuildinfo
-__reports
-__scripts
+__reports/
+__scripts/

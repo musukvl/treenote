@@ -1,17 +1,24 @@
-# TreeNote v1.0.5 Release Notes
+# TreeNote v1.0.6 Release Notes
 
 ## Overview
 
-Toolchain modernization release. No new product features — upgrades packaging and developer tooling to current stable versions, and adds pre-commit quality gates.
+Security hardening and data-integrity release. Protects against renderer navigation abuse, untrusted IPC payloads, and binary misuse, and closes realistic data-loss paths around corrupt files, quit-time edits, and multi-instance writes.
 
-## Changes
+## Security
 
-- **Electron Builder**: moved from `27.0.0-alpha.5` to stable `26.15.3` (no more pre-release packaging toolchain).
-- **TypeScript**: upgraded to `6.0` (removed deprecated `baseUrl` from `tsconfig.web.json`).
-- **ESLint**: upgraded to `10` (fixed `no-useless-assignment` in tree drag-and-drop).
-- **js-yaml**: upgraded to `5` (named imports; empty data files handled safely).
-- **Pre-commit hooks**: husky + lint-staged run ESLint, Prettier, and typecheck before every commit.
-- **Node engines**: require Node `>=22.12.0`.
+- **Navigation guards**: deny unexpected `will-navigate` and `window.open` (dev allows only the Vite renderer origin).
+- **IPC validation**: trusted-sender checks, `TreeData` validation on save/open, constrained log levels.
+- **Electron Fuses**: disable `RunAsNode` / `NODE_OPTIONS` / `--inspect`; enable ASAR integrity and `onlyLoadAppFromAsar`.
+
+## Data integrity
+
+- **Corrupt files**: quarantine invalid data to `notes.yaml.corrupt-<timestamp>`, show an error, then create fresh data (no silent overwrite).
+- **Flush on quit**: pending edits are saved before the window closes.
+- **Single-instance lock**: a second launch focuses the existing window instead of opening another writer.
+- **Rolling backups**: keep the last 10 copies under a sibling `backups/` directory.
+- **Schema migration hook**: `migrateTreeData()` runs on load (ready for future format versions).
+- **Storage location**: installed builds use `userData`; portable / AppImage keep exe-adjacent data.
+- **Save errors**: repeated save failures show an error dialog.
 
 ## Downloads (Windows)
 

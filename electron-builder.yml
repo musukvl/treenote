@@ -5,6 +5,18 @@ directories:
   output: dist
 files:
   - out/**/*
+# Harden the packaged Electron binary (build-time fuses).
+# Keep grantFileProtocolExtraPrivileges enabled — production loads the
+# renderer via loadFile (file://).
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  loadBrowserProcessSpecificV8Snapshot: false
+  grantFileProtocolExtraPrivileges: true
 win:
   target: [nsis, portable]
   icon: resources/icon.ico

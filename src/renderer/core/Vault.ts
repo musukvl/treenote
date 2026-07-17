@@ -4,10 +4,12 @@ import type { StorageAdapter } from './StorageAdapter';
 import type { NoteNode, TreeData } from '../models/NoteNode';
 import { createNoteNode, createWelcomeData } from '../models/NoteNode';
 import { validateTreeData } from '../models/validate';
+import { migrateTreeData } from '../../shared/migrate-tree-data';
 import { removeNodeById, insertNode } from '../helpers/tree-utils';
 import { debounce } from '../helpers/debounce';
 
 const AUTO_SAVE_DELAY = 2000;
+const SAVE_ERROR_DIALOG_THRESHOLD = 2;
 
 /**
  * Data persistence layer.
@@ -20,6 +22,7 @@ export class Vault extends Component {
   private _dirty = false;
   private _debouncedSave: ReturnType<typeof debounce>;
   private _index: Map<string, NoteNode> = new Map();
+  private _consecutiveSaveErrors = 0;
 
   constructor(app: App, storage: StorageAdapter) {
     super();
@@ -52,31 +55,77 @@ export class Vault extends Component {
     try {
       const raw = await this.storage.load();
       if (raw) {
-        const parsed = JSON.parse(raw);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(raw);
+        } catch (err) {
+          await this.recoverFromCorruptFile('Data file is not valid JSON.', err);
+          return;
+        }
+
         const validated = validateTreeData(parsed);
-        if (validated) {
-          this._data = validated;
-          this.app.logger.debug('Vault', `Loaded ${this.countNodes()} notes.`);
-        } else {
-          this.app.logger.error('Vault', 'Invalid data file structure, creating fresh data.');
-          this._data = createWelcomeData();
+        if (!validated) {
+          await this.recoverFromCorruptFile('Data file has an invalid TreeNote structure.');
+          return;
+        }
+
+        const { data, migrated } = migrateTreeData(validated);
+        this._data = data;
+        this.rebuildIndex();
+
+        if (migrated) {
+          this.app.logger.info('Vault', `Migrated data file to version ${data.metadata.version}.`);
           this._dirty = true;
           await this.save();
+        } else {
+          this.app.logger.debug('Vault', `Loaded ${this.countNodes()} notes.`);
         }
-      } else {
-        this._data = createWelcomeData();
-        this._dirty = true;
-        await this.save();
-        this.app.logger.debug('Vault', 'Created welcome note.');
+
+        this.app.events.trigger('data-loaded', this._data);
+        return;
       }
-      this.rebuildIndex();
-      this.app.events.trigger('data-loaded', this._data);
+
+      await this.createFreshWelcomeData('Created welcome note.');
     } catch (err) {
       this.app.logger.error('Vault', 'Failed to load data', err);
-      this._data = createWelcomeData();
-      this.rebuildIndex();
-      this.app.events.trigger('data-loaded', this._data);
+      await this.recoverFromCorruptFile('Failed to read the data file.', err);
     }
+  }
+
+  private async recoverFromCorruptFile(reason: string, err?: unknown): Promise<void> {
+    if (err) {
+      this.app.logger.error('Vault', reason, err);
+    } else {
+      this.app.logger.error('Vault', reason);
+    }
+
+    let quarantinePath: string | null = null;
+    try {
+      quarantinePath = await this.storage.quarantineCorrupt();
+    } catch (quarantineErr) {
+      this.app.logger.error('Vault', 'Failed to quarantine corrupt data file', quarantineErr);
+    }
+
+    const detail = quarantinePath
+      ? `${reason}\n\nThe original file was moved to:\n${quarantinePath}\n\nA new empty notes file will be created.`
+      : `${reason}\n\nA new empty notes file will be created.`;
+
+    try {
+      await this.storage.showError('Invalid data file', detail);
+    } catch (dialogErr) {
+      this.app.logger.error('Vault', 'Failed to show corrupt-file dialog', dialogErr);
+    }
+
+    await this.createFreshWelcomeData('Created welcome note after corrupt-file recovery.');
+  }
+
+  private async createFreshWelcomeData(logMessage: string): Promise<void> {
+    this._data = createWelcomeData();
+    this._dirty = true;
+    this.rebuildIndex();
+    await this.save();
+    this.app.logger.debug('Vault', logMessage);
+    this.app.events.trigger('data-loaded', this._data);
   }
 
   // --- CRUD Operations ---
@@ -224,12 +273,25 @@ export class Vault extends Component {
       const json = JSON.stringify(this._data);
       await this.storage.save(json);
       this._dirty = false;
+      this._consecutiveSaveErrors = 0;
       this.app.events.trigger('save-status-change', 'saved');
       this.app.events.trigger('data-saved');
       this.app.logger.debug('Vault', 'Data saved.');
     } catch (err) {
+      this._consecutiveSaveErrors += 1;
       this.app.events.trigger('save-status-change', 'error');
       this.app.logger.error('Vault', 'Failed to save', err);
+
+      if (this._consecutiveSaveErrors >= SAVE_ERROR_DIALOG_THRESHOLD) {
+        try {
+          await this.storage.showError(
+            'Save failed',
+            'TreeNote could not save your notes. Check disk space and file permissions, then try Ctrl+S again.',
+          );
+        } catch (dialogErr) {
+          this.app.logger.error('Vault', 'Failed to show save-error dialog', dialogErr);
+        }
+      }
     }
   }
 

@@ -36,11 +36,28 @@ export class App extends Component {
     await this.vault.loadData();
     this.registerGlobalHotkeys();
     this.registerMenuActions();
+    this.registerQuitFlush();
     this.logger.debug('App', 'Loaded successfully.');
   }
 
   onunload(): void {
     this.logger.debug('App', 'Unloading...');
+  }
+
+  private registerQuitFlush(): void {
+    if (!window.api?.onPrepareQuit) return;
+
+    const unsubscribe = window.api.onPrepareQuit(async () => {
+      try {
+        await this.vault.saveNow();
+      } catch (err) {
+        this.logger.error('App', 'Failed to flush saves before quit', err);
+      } finally {
+        window.api.readyToQuit();
+      }
+    });
+
+    this.register(unsubscribe);
   }
 
   private registerGlobalHotkeys(): void {
@@ -95,10 +112,14 @@ export class App extends Component {
 
   private async openFile(): Promise<void> {
     await this.vault.saveNow();
-    const filePath = await window.api.openFile();
-    if (!filePath) return;
+    try {
+      const filePath = await window.api.openFile();
+      if (!filePath) return;
 
-    await this.vault.loadData();
-    this.events.trigger('active-note-change', null);
+      await this.vault.loadData();
+      this.events.trigger('active-note-change', null);
+    } catch (err) {
+      this.logger.error('App', 'Failed to open file', err);
+    }
   }
 }

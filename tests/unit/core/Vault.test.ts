@@ -49,6 +49,7 @@ describe('Vault.moveNote ordering', () => {
       events: new Events(),
       logger: {
         debug: vi.fn(),
+        info: vi.fn(),
         error: vi.fn(),
       },
     };
@@ -57,6 +58,8 @@ describe('Vault.moveNote ordering', () => {
       load: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockResolvedValue(undefined),
       getPath: vi.fn().mockResolvedValue('/tmp/test.yaml'),
+      quarantineCorrupt: vi.fn().mockResolvedValue('/tmp/test.yaml.corrupt'),
+      showError: vi.fn().mockResolvedValue(undefined),
     };
 
     vault = new Vault(app as never, mockStorage);

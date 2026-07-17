@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, readFile, rm, mkdir } from 'fs/promises';
+import { mkdtemp, readFile, rm, mkdir, readdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -89,5 +89,35 @@ describe('FileManager', () => {
     const fm = new FileManager(dirAsFilePath);
 
     await expect(fm.write(JSON.stringify({ ok: true }))).rejects.toThrow();
+  });
+
+  it('should quarantine a corrupt file by renaming it aside', async () => {
+    const fm = new FileManager(filePath);
+    await fm.ensureFileExists('broken: [');
+
+    const quarantinePath = await fm.quarantineCorrupt();
+
+    expect(existsSync(filePath)).toBe(false);
+    expect(existsSync(quarantinePath)).toBe(true);
+    expect(quarantinePath).toContain('.corrupt-');
+  });
+
+  it('should create a rolling backup before overwriting an existing file', async () => {
+    const fm = new FileManager(filePath);
+    const first = JSON.stringify({
+      root: { id: 'root', name: 'Root', children: [] },
+    });
+    const second = JSON.stringify({
+      root: { id: 'root', name: 'Updated', children: [] },
+    });
+
+    await fm.write(first);
+    await fm.write(second);
+
+    const backupDir = join(tempDir, 'vault', 'backups');
+    expect(existsSync(backupDir)).toBe(true);
+    const backups = await readdir(backupDir);
+    expect(backups.length).toBe(1);
+    expect(backups[0]).toContain('notes.yml.');
   });
 });

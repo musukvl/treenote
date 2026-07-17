@@ -6,4 +6,6 @@ export interface StorageAdapter {
   load(): Promise<string | null>;
   save(data: string): Promise<void>;
   getPath(): Promise<string>;
+  quarantineCorrupt(): Promise<string>;
+  showError(title: string, detail: string): Promise<void>;
 }

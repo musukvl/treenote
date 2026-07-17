@@ -1,27 +1,7 @@
-/** A single node in the note tree. */
-export interface NoteNode {
-  id: string;
-  name: string;
-  content: string;
-  children: NoteNode[];
-  parentId: string | null;
-  createdAt: number;
-  updatedAt: number;
-  isExpanded: boolean;
-}
+import type { NoteNode, TreeData, TreeDataMetadata } from '../../shared/tree-data';
+import { CURRENT_TREE_VERSION } from '../../shared/tree-version';
 
-/** File-level metadata. */
-export interface TreeDataMetadata {
-  version: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-/** Root data structure stored in the YAML file. */
-export interface TreeData {
-  root: NoteNode;
-  metadata: TreeDataMetadata;
-}
+export type { NoteNode, TreeData, TreeDataMetadata };
 
 /** Generate a simple UUID v4. */
 export function generateId(): string {
@@ -69,7 +49,7 @@ export function createWelcomeData(): TreeData {
   return {
     root,
     metadata: {
-      version: '1.0.0',
+      version: CURRENT_TREE_VERSION,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     },

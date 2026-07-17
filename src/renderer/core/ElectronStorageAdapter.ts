@@ -15,4 +15,12 @@ export class ElectronStorageAdapter implements StorageAdapter {
   async getPath(): Promise<string> {
     return window.api.getFilePath();
   }
+
+  async quarantineCorrupt(): Promise<string> {
+    return window.api.quarantineCorrupt();
+  }
+
+  async showError(title: string, detail: string): Promise<void> {
+    await window.api.showError(title, detail);
+  }
 }

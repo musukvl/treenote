@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateTreeData } from '../../../src/renderer/models/validate';
+import { validateTreeData } from '../../../src/shared/validate-tree-data';
 
 describe('validateTreeData', () => {
   const validData = {

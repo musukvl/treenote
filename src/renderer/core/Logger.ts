@@ -1,4 +1,5 @@
 import type { App } from './App';
+import type { LogLevel } from '../../shared/ipc';
 
 /**
  * Debug logger for the renderer process.
@@ -40,7 +41,7 @@ export class Logger {
     this.sendToMain('error', source, message, ...args);
   }
 
-  private sendToMain(level: string, source: string, message: string, ...args: unknown[]): void {
+  private sendToMain(level: LogLevel, source: string, message: string, ...args: unknown[]): void {
     if (typeof window !== 'undefined' && window.api?.log) {
       window.api.log(level, `[${source}] ${message}`, ...args);
     }

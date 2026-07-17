@@ -11,4 +11,4 @@
 
 ## Building apps
 
-- For each application "build.sh" or "build.ps1" file should be created to build application from scratch. It should install dependencies and create executalbe.
+- For each application "build.sh" or "build.ps1" file should be created to build application from scratch. It should install dependencies and create executable.
