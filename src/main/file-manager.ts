@@ -1,7 +1,7 @@
 import { readFile, writeFile, rename, mkdir, unlink } from 'fs/promises';
 import { existsSync } from 'fs';
 import { dirname } from 'path';
-import { load, dump } from 'js-yaml';
+import yaml from 'js-yaml';
 import { logger } from './logger';
 
 /**
@@ -40,11 +40,7 @@ export class FileManager {
     }
     try {
       const content = await readFile(this.filePath, 'utf-8');
-      // js-yaml v5 throws on empty input; treat an empty file as "no data"
-      if (content.trim() === '') {
-        return null;
-      }
-      const data = load(content);
+      const data = yaml.load(content);
       return JSON.stringify(data);
     } catch (err) {
       logger.error(`Failed to read file: ${this.filePath}`, err);
@@ -56,7 +52,7 @@ export class FileManager {
   async write(jsonContent: string): Promise<void> {
     await this.ensureDirectory();
     const data = JSON.parse(jsonContent);
-    const yamlContent = dump(data, {
+    const yamlContent = yaml.dump(data, {
       indent: 2,
       lineWidth: 120,
       noRefs: true,

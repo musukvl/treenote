@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { load } from 'js-yaml';
+import yaml from 'js-yaml';
 import { FileManager } from '../../../src/main/file-manager';
 
 describe('FileManager', () => {
@@ -60,7 +60,7 @@ describe('FileManager', () => {
     await fm.write(json);
 
     const yamlText = await readFile(filePath, 'utf-8');
-    const parsedYaml = load(yamlText) as {
+    const parsedYaml = yaml.load(yamlText) as {
       root: { id: string; children: Array<{ id: string; name: string }> };
     };
     expect(parsedYaml.root.id).toBe('root');
