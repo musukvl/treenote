@@ -94,7 +94,7 @@ export class TreeDragDropController {
       const movedId = this.draggedNodeId;
       const position = this.dropTargetId === node.id ? this.dropPosition : 'inside';
 
-      let success = false;
+      let success: boolean;
       if (position === 'inside') {
         const draggedNode = this.app.vault.findNode(movedId);
         if (draggedNode && draggedNode.parentId === node.id) {
