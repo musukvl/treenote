@@ -3,7 +3,7 @@ import { app } from 'electron';
 import { DATA_FILE_NAME } from './constants';
 
 /**
- * Resolve the default notes.yaml location.
+ * Resolve the default notes.tnyml location.
  * Portable / AppImage builds keep data next to the executable;
  * installed builds use the platform userData directory.
  */

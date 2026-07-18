@@ -57,8 +57,8 @@ describe('Vault.moveNote ordering', () => {
     const mockStorage: StorageAdapter = {
       load: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockResolvedValue(undefined),
-      getPath: vi.fn().mockResolvedValue('/tmp/test.yaml'),
-      quarantineCorrupt: vi.fn().mockResolvedValue('/tmp/test.yaml.corrupt'),
+      getPath: vi.fn().mockResolvedValue('/tmp/test.tnyml'),
+      quarantineCorrupt: vi.fn().mockResolvedValue('/tmp/test.tnyml.corrupt'),
       showError: vi.fn().mockResolvedValue(undefined),
     };
 

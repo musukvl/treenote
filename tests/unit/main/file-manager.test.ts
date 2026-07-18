@@ -12,7 +12,7 @@ describe('FileManager', () => {
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'treenote-file-manager-'));
-    filePath = join(tempDir, 'vault', 'notes.yml');
+    filePath = join(tempDir, 'vault', 'notes.tnyml');
   });
 
   afterEach(async () => {
@@ -118,6 +118,6 @@ describe('FileManager', () => {
     expect(existsSync(backupDir)).toBe(true);
     const backups = await readdir(backupDir);
     expect(backups.length).toBe(1);
-    expect(backups[0]).toContain('notes.yml.');
+    expect(backups[0]).toContain('notes.tnyml.');
   });
 });

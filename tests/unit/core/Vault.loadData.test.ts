@@ -33,13 +33,13 @@ describe('Vault.loadData integrity', () => {
 
   beforeEach(() => {
     showError = vi.fn().mockResolvedValue(undefined);
-    quarantineCorrupt = vi.fn().mockResolvedValue('/tmp/notes.yaml.corrupt-stamp');
+    quarantineCorrupt = vi.fn().mockResolvedValue('/tmp/notes.tnyml.corrupt-stamp');
     save = vi.fn().mockResolvedValue(undefined);
 
     storage = {
       load: vi.fn(),
       save,
-      getPath: vi.fn().mockResolvedValue('/tmp/notes.yaml'),
+      getPath: vi.fn().mockResolvedValue('/tmp/notes.tnyml'),
       quarantineCorrupt,
       showError,
     };

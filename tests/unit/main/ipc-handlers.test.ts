@@ -85,10 +85,10 @@ describe('registerIpcHandlers', () => {
   const fileManager = {
     read: vi.fn(async () => validTreeJson),
     write: vi.fn(async () => {}),
-    getFilePath: vi.fn(() => '/tmp/notes.yaml'),
+    getFilePath: vi.fn(() => '/tmp/notes.tnyml'),
     setFilePath: vi.fn(),
     ensureFileExists: vi.fn(async () => {}),
-    quarantineCorrupt: vi.fn(async () => '/tmp/notes.yaml.corrupt-stamp'),
+    quarantineCorrupt: vi.fn(async () => '/tmp/notes.tnyml.corrupt-stamp'),
   };
 
   beforeEach(() => {
@@ -99,10 +99,10 @@ describe('registerIpcHandlers', () => {
 
     fileManager.read.mockResolvedValue(validTreeJson);
     fileManager.write.mockResolvedValue(undefined);
-    fileManager.getFilePath.mockReturnValue('/tmp/notes.yaml');
+    fileManager.getFilePath.mockReturnValue('/tmp/notes.tnyml');
     fileManager.setFilePath.mockReturnValue(undefined);
     fileManager.ensureFileExists.mockResolvedValue(undefined);
-    fileManager.quarantineCorrupt.mockResolvedValue('/tmp/notes.yaml.corrupt-stamp');
+    fileManager.quarantineCorrupt.mockResolvedValue('/tmp/notes.tnyml.corrupt-stamp');
     showOpenDialog.mockResolvedValue({ canceled: true, filePaths: [] });
 
     registerIpcHandlers({
@@ -112,11 +112,12 @@ describe('registerIpcHandlers', () => {
   });
 
   it('registers all expected IPC handlers and listeners', () => {
-    expect(ipcMainHandle).toHaveBeenCalledTimes(7);
+    expect(ipcMainHandle).toHaveBeenCalledTimes(8);
     expect(ipcMainOn).toHaveBeenCalledTimes(1);
 
     expect(handleCallbacks.has(IPC.LOAD_FILE)).toBe(true);
     expect(handleCallbacks.has(IPC.OPEN_FILE)).toBe(true);
+    expect(handleCallbacks.has(IPC.OPEN_PATH)).toBe(true);
     expect(handleCallbacks.has(IPC.SAVE_FILE)).toBe(true);
     expect(handleCallbacks.has(IPC.QUARANTINE_CORRUPT)).toBe(true);
     expect(handleCallbacks.has(IPC.GET_APP_VERSION)).toBe(true);
@@ -151,7 +152,7 @@ describe('registerIpcHandlers', () => {
       title: 'Open TreeNote File',
       properties: ['openFile'],
       filters: [
-        { name: 'TreeNote Files', extensions: ['yaml', 'yml'] },
+        { name: 'TreeNote Files', extensions: ['tnyml'] },
         { name: 'All Files', extensions: ['*'] },
       ],
     });
@@ -165,29 +166,65 @@ describe('registerIpcHandlers', () => {
     expect(handler).toBeTruthy();
     showOpenDialog.mockResolvedValue({
       canceled: false,
-      filePaths: ['/tmp/selected-notes.yaml'],
+      filePaths: ['/tmp/selected-notes.tnyml'],
     });
 
     const result = await handler!(trustedEvent());
 
-    expect(result).toBe('/tmp/selected-notes.yaml');
-    expect(fileManager.setFilePath).toHaveBeenCalledWith('/tmp/selected-notes.yaml');
+    expect(result).toBe('/tmp/selected-notes.tnyml');
+    expect(fileManager.setFilePath).toHaveBeenCalledWith('/tmp/selected-notes.tnyml');
     expect(fileManager.ensureFileExists).toHaveBeenCalledTimes(1);
     expect(fileManager.read).toHaveBeenCalledTimes(1);
-    expect(logger.info).toHaveBeenCalledWith('Opened data file: /tmp/selected-notes.yaml');
+    expect(logger.info).toHaveBeenCalledWith('Opened data file: /tmp/selected-notes.tnyml');
   });
 
   it('rejects opening an invalid data file and restores the previous path', async () => {
     const handler = handleCallbacks.get(IPC.OPEN_FILE);
     showOpenDialog.mockResolvedValue({
       canceled: false,
-      filePaths: ['/tmp/bad-notes.yaml'],
+      filePaths: ['/tmp/bad-notes.tnyml'],
     });
     fileManager.read.mockResolvedValue('{"not":"tree-data"}');
 
     await expect(handler!(trustedEvent())).rejects.toThrow('Payload is not valid TreeNote data');
-    expect(fileManager.setFilePath).toHaveBeenNthCalledWith(1, '/tmp/bad-notes.yaml');
-    expect(fileManager.setFilePath).toHaveBeenNthCalledWith(2, '/tmp/notes.yaml');
+    expect(fileManager.setFilePath).toHaveBeenNthCalledWith(1, '/tmp/bad-notes.tnyml');
+    expect(fileManager.setFilePath).toHaveBeenNthCalledWith(2, '/tmp/notes.tnyml');
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('opens an externally requested path and updates file manager path', async () => {
+    const handler = handleCallbacks.get(IPC.OPEN_PATH);
+    expect(handler).toBeTruthy();
+
+    const result = await handler!(trustedEvent(), '/tmp/external-notes.tnyml');
+
+    expect(result).toBe('/tmp/external-notes.tnyml');
+    expect(fileManager.setFilePath).toHaveBeenCalledWith('/tmp/external-notes.tnyml');
+    expect(fileManager.ensureFileExists).toHaveBeenCalledTimes(1);
+    expect(logger.info).toHaveBeenCalledWith('Opened data file: /tmp/external-notes.tnyml');
+  });
+
+  it('rejects invalid external path payloads', async () => {
+    const handler = handleCallbacks.get(IPC.OPEN_PATH);
+
+    await expect(handler!(trustedEvent(), 42)).rejects.toThrow(
+      'Open path payload must be a non-empty string',
+    );
+    await expect(handler!(trustedEvent(), '')).rejects.toThrow(
+      'Open path payload must be a non-empty string',
+    );
+    expect(fileManager.setFilePath).not.toHaveBeenCalled();
+  });
+
+  it('rejects an externally requested file with invalid data and restores the previous path', async () => {
+    const handler = handleCallbacks.get(IPC.OPEN_PATH);
+    fileManager.read.mockResolvedValue('{"not":"tree-data"}');
+
+    await expect(handler!(trustedEvent(), '/tmp/bad-external.tnyml')).rejects.toThrow(
+      'Payload is not valid TreeNote data',
+    );
+    expect(fileManager.setFilePath).toHaveBeenNthCalledWith(1, '/tmp/bad-external.tnyml');
+    expect(fileManager.setFilePath).toHaveBeenNthCalledWith(2, '/tmp/notes.tnyml');
     expect(logger.error).toHaveBeenCalled();
   });
 
@@ -220,7 +257,7 @@ describe('registerIpcHandlers', () => {
     expect(getPathHandler).toBeTruthy();
 
     expect(getVersionHandler!(trustedEvent())).toBe('1.2.3-test');
-    expect(getPathHandler!(trustedEvent())).toBe('/tmp/notes.yaml');
+    expect(getPathHandler!(trustedEvent())).toBe('/tmp/notes.tnyml');
     expect(getVersion).toHaveBeenCalledTimes(1);
     expect(fileManager.getFilePath).toHaveBeenCalled();
   });
@@ -229,7 +266,7 @@ describe('registerIpcHandlers', () => {
     const handler = handleCallbacks.get(IPC.QUARANTINE_CORRUPT);
     const result = await handler!(trustedEvent());
 
-    expect(result).toBe('/tmp/notes.yaml.corrupt-stamp');
+    expect(result).toBe('/tmp/notes.tnyml.corrupt-stamp');
     expect(fileManager.quarantineCorrupt).toHaveBeenCalledTimes(1);
   });
 

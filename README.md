@@ -50,15 +50,15 @@ npm run dev
 Run with a specific notes file:
 
 ```bash
-npm run dev -- -- /path/to/notes.yaml
+npm run dev -- -- /path/to/notes.tnyml
 ```
 
 Supported startup argument formats:
 
-- positional path: `/path/to/notes.yaml`
-- `--file /path/to/notes.yaml`
-- `--file=/path/to/notes.yaml`
-- `-f /path/to/notes.yaml`
+- positional path: `/path/to/notes.tnyml`
+- `--file /path/to/notes.tnyml`
+- `--file=/path/to/notes.tnyml`
+- `-f /path/to/notes.tnyml`
 
 If the file does not exist, TreeNote creates it automatically.
 
@@ -145,8 +145,8 @@ Additional scripts:
 
 ## Data Storage
 
-- Notes are stored in YAML.
-- Default file name is `notes.yaml`.
+- Notes are stored in YAML, using the `.tnyml` file extension.
+- Default file name is `notes.tnyml`.
 - In portable mode, the default data file is placed next to the executable.
 
 ## Keyboard Shortcuts

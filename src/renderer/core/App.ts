@@ -36,6 +36,7 @@ export class App extends Component {
     await this.vault.loadData();
     this.registerGlobalHotkeys();
     this.registerMenuActions();
+    this.registerExternalOpen();
     this.registerQuitFlush();
     this.logger.debug('App', 'Loaded successfully.');
   }
@@ -108,6 +109,28 @@ export class App extends Component {
     });
 
     this.register(unsubscribe);
+  }
+
+  private registerExternalOpen(): void {
+    if (!window.api?.onExternalOpen) return;
+
+    const unsubscribe = window.api.onExternalOpen((filePath: string) => {
+      void this.openExternalFile(filePath);
+    });
+
+    this.register(unsubscribe);
+  }
+
+  /** Open a file requested by the OS (double-click / "Open with"). */
+  private async openExternalFile(filePath: string): Promise<void> {
+    await this.vault.saveNow();
+    try {
+      await window.api.openPath(filePath);
+      await this.vault.loadData();
+      this.events.trigger('active-note-change', null);
+    } catch (err) {
+      this.logger.error('App', 'Failed to open file from OS', err);
+    }
   }
 
   private async openFile(): Promise<void> {

@@ -5,6 +5,16 @@ directories:
   output: dist
 files:
   - out/**/*
+# Register .tnyml with the OS (NSIS registry keys on Windows,
+# CFBundleDocumentTypes on macOS, mime type + desktop entry on Linux).
+# icon resolves per platform from buildResources: file-icon.ico / .icns / .png.
+fileAssociations:
+  - ext: tnyml
+    name: TreeNote Note
+    description: TreeNote hierarchical notes file
+    mimeType: application/x-treenote
+    role: Editor
+    icon: file-icon
 # Harden the packaged Electron binary (build-time fuses).
 # Keep grantFileProtocolExtraPrivileges enabled — production loads the
 # renderer via loadFile (file://).

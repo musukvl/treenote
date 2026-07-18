@@ -27,6 +27,8 @@ let mainWindow: BrowserWindow | null = null;
 let fileManager: FileManager | null = null;
 let allowClose = false;
 let flushInProgress = false;
+/** File requested by the OS (macOS open-file) before the window existed. */
+let pendingExternalFilePath: string | null = null;
 
 function parseCliDataFilePath(argv: string[]): string | null {
   for (let i = 0; i < argv.length; i++) {
@@ -45,7 +47,7 @@ function parseCliDataFilePath(argv: string[]): string | null {
     }
 
     const extension = extname(arg).toLowerCase();
-    if (extension === '.yml' || extension === '.yaml') {
+    if (extension === '.tnyml') {
       return resolve(arg);
     }
   }
@@ -54,7 +56,26 @@ function parseCliDataFilePath(argv: string[]): string | null {
 }
 
 function resolveDataFilePath(argv: string[]): string {
+  if (pendingExternalFilePath) {
+    const requested = pendingExternalFilePath;
+    pendingExternalFilePath = null;
+    return requested;
+  }
   return parseCliDataFilePath(argv) ?? getDefaultDataFilePath();
+}
+
+/**
+ * Handle a file opened via OS file association while the app is running.
+ * The renderer flushes pending saves to the current file first, then asks
+ * the main process to switch paths and reloads.
+ */
+function applyExternalFile(filePath: string): void {
+  logger.info(`External open requested: ${filePath}`);
+  if (mainWindow) {
+    mainWindow.webContents.send(IPC.EXTERNAL_OPEN, filePath);
+  } else {
+    pendingExternalFilePath = filePath;
+  }
 }
 
 function focusMainWindow(): void {
@@ -125,14 +146,19 @@ async function createWindow(): Promise<void> {
 }
 
 if (gotSingleInstanceLock) {
+  // macOS delivers file-association opens via this event instead of argv.
+  // Must be registered before app is ready to catch cold-start opens.
+  app.on('open-file', (event, filePath) => {
+    event.preventDefault();
+    applyExternalFile(resolve(filePath));
+  });
+
   app.on('second-instance', (_event, argv) => {
     focusMainWindow();
 
     const requestedPath = parseCliDataFilePath(argv);
-    if (requestedPath && mainWindow && fileManager) {
-      logger.info(`Second instance requested file: ${requestedPath}`);
-      // Path switch from a second instance is intentionally not auto-applied —
-      // the focused window keeps its current vault. Users can File → Open.
+    if (requestedPath) {
+      applyExternalFile(requestedPath);
     }
   });
 

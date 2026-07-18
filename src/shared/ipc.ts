@@ -5,6 +5,8 @@
 export const IpcChannels = {
   LOAD_FILE: 'file:load',
   OPEN_FILE: 'file:open',
+  OPEN_PATH: 'file:open-path',
+  EXTERNAL_OPEN: 'file:external-open',
   SAVE_FILE: 'file:save',
   QUARANTINE_CORRUPT: 'file:quarantine-corrupt',
   GET_APP_VERSION: 'app:version',
@@ -25,6 +27,7 @@ export type LogLevel = (typeof LogLevels)[number];
 export interface TreeNoteAPI {
   loadFile(): Promise<string | null>;
   openFile(): Promise<string | null>;
+  openPath(filePath: string): Promise<string | null>;
   saveFile(content: string): Promise<void>;
   quarantineCorrupt(): Promise<string>;
   getFilePath(): Promise<string>;
@@ -32,6 +35,7 @@ export interface TreeNoteAPI {
   showError(title: string, detail: string): Promise<void>;
   log(level: LogLevel, ...args: unknown[]): void;
   onMenuAction(callback: (action: string) => void): () => void;
+  onExternalOpen(callback: (filePath: string) => void): () => void;
   onPrepareQuit(callback: () => void | Promise<void>): () => void;
   readyToQuit(): void;
 }

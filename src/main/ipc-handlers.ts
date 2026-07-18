@@ -41,6 +41,27 @@ function isLogLevel(value: unknown): value is LogLevel {
   return typeof value === 'string' && (LogLevels as readonly string[]).includes(value);
 }
 
+/** Point the file manager at a new path, validating content and rolling back on failure. */
+async function switchToFile(fileManager: FileManager, filePath: string): Promise<void> {
+  const previousPath = fileManager.getFilePath();
+
+  fileManager.setFilePath(filePath);
+  await fileManager.ensureFileExists();
+
+  try {
+    const content = await fileManager.read();
+    if (content !== null) {
+      parseAndValidateTreeJson(content);
+    }
+  } catch (err) {
+    fileManager.setFilePath(previousPath);
+    logger.error(`Rejected open of invalid data file: ${filePath}`, err);
+    throw err instanceof Error ? err : new Error('Failed to open data file');
+  }
+
+  logger.info(`Opened data file: ${filePath}`);
+}
+
 /** Register all IPC handlers. Must be called once during app startup. */
 export function registerIpcHandlers(state: AppState): void {
   ipcMain.handle(IPC.LOAD_FILE, async (event) => {
@@ -55,7 +76,7 @@ export function registerIpcHandlers(state: AppState): void {
       title: 'Open TreeNote File',
       properties: ['openFile'],
       filters: [
-        { name: 'TreeNote Files', extensions: ['yaml', 'yml'] },
+        { name: 'TreeNote Files', extensions: ['tnyml'] },
         { name: 'All Files', extensions: ['*'] },
       ],
     });
@@ -65,24 +86,18 @@ export function registerIpcHandlers(state: AppState): void {
     }
 
     const [filePath] = result.filePaths;
-    const fileManager = state.getFileManager();
-    const previousPath = fileManager.getFilePath();
+    await switchToFile(state.getFileManager(), filePath);
+    return filePath;
+  });
 
-    fileManager.setFilePath(filePath);
-    await fileManager.ensureFileExists();
+  ipcMain.handle(IPC.OPEN_PATH, async (event, filePath: unknown) => {
+    assertTrustedSender(event);
 
-    try {
-      const content = await fileManager.read();
-      if (content !== null) {
-        parseAndValidateTreeJson(content);
-      }
-    } catch (err) {
-      fileManager.setFilePath(previousPath);
-      logger.error(`Rejected open of invalid data file: ${filePath}`, err);
-      throw err instanceof Error ? err : new Error('Failed to open data file');
+    if (typeof filePath !== 'string' || !filePath) {
+      throw new Error('Open path payload must be a non-empty string');
     }
 
-    logger.info(`Opened data file: ${filePath}`);
+    await switchToFile(state.getFileManager(), filePath);
     return filePath;
   });
 

@@ -5,6 +5,8 @@ import type { TreeNoteAPI } from '../shared/ipc';
 contextBridge.exposeInMainWorld('api', {
   loadFile: (): Promise<string | null> => ipcRenderer.invoke(IpcChannels.LOAD_FILE),
   openFile: (): Promise<string | null> => ipcRenderer.invoke(IpcChannels.OPEN_FILE),
+  openPath: (filePath: string): Promise<string | null> =>
+    ipcRenderer.invoke(IpcChannels.OPEN_PATH, filePath),
   saveFile: (content: string): Promise<void> => ipcRenderer.invoke(IpcChannels.SAVE_FILE, content),
   quarantineCorrupt: (): Promise<string> => ipcRenderer.invoke(IpcChannels.QUARANTINE_CORRUPT),
   getFilePath: (): Promise<string> => ipcRenderer.invoke(IpcChannels.GET_FILE_PATH),
@@ -18,6 +20,12 @@ contextBridge.exposeInMainWorld('api', {
     const handler = (_event: Electron.IpcRendererEvent, action: string): void => callback(action);
     ipcRenderer.on(IpcChannels.MENU_ACTION, handler);
     return () => ipcRenderer.removeListener(IpcChannels.MENU_ACTION, handler);
+  },
+  onExternalOpen: (callback: (filePath: string) => void): (() => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, filePath: string): void =>
+      callback(filePath);
+    ipcRenderer.on(IpcChannels.EXTERNAL_OPEN, handler);
+    return () => ipcRenderer.removeListener(IpcChannels.EXTERNAL_OPEN, handler);
   },
   onPrepareQuit: (callback: () => void | Promise<void>): (() => void) => {
     const handler = (): void => {
