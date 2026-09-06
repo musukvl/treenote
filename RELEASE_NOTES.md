@@ -1,20 +1,20 @@
-# TreeNote v1.0.7 Release Notes
+# TreeNote v1.0.8 Release Notes
 
 ## Overview
 
-File-type release. TreeNote notes now use the dedicated `.tnyml` extension (content is still YAML inside), the OS registers `.tnyml` with a TreeNote document icon, and double-clicking a `.tnyml` file opens it in TreeNote on all platforms.
+Maintenance release. TreeNote moves to Electron 44, Vitest 5, and other latest-stable toolchain packages. The required Node.js version for development and CI is now 22.22.2 or newer. App behavior for notes, files, and shortcuts is unchanged.
 
-## File type: `.tnyml`
+## Runtime and packaging
 
-- **New extension**: the default data file is now `notes.tnyml`; the Open File dialog filters on `*.tnyml`; CLI positional arguments accept `.tnyml` paths.
-- **File association**: the Windows installer registers `.tnyml` (ProgID `TreeNote Note`) with a document-style icon and an `Open with TreeNote` command. macOS gets `CFBundleDocumentTypes`, Linux gets a `application/x-treenote` mime type in the desktop entry.
-- **Document icon**: new `.tnyml` file icon derived from the app icon (page with the TreeNote tree badge), shipped as `.ico` / `.icns` / `.png`; regenerate with `node __scripts/generate-file-icon.cjs`.
-- **"Open with" works while running**: opening a `.tnyml` file from Explorer/Finder now switches the running instance to that file (macOS `open-file` event; Windows/Linux second-instance argv). Pending edits are flushed to the previous file first.
-- **Linux desktop integration**: `build-linux.sh` installs the mime XML, mime icon, and a desktop entry, then refreshes the xdg mime/desktop databases so AppImage users get the association too.
+- **Electron 44.2.0**: Chromium/Node inside the desktop app are updated. 32-bit Windows/Linux builds are no longer produced by Electron; TreeNote already packaged 64-bit only. macOS 13 (Ventura) or later is required for this Electron series.
+- **electron-builder 26.16.0**: packaging stays on the 26.x line (27 is still pre-release).
+- **Node.js 22.22.2+**: `package.json` engines, README, and GitHub Release workflow now use Node 22 instead of Node 20.
 
-## Breaking change
+## Tooling
 
-- `.yaml` / `.yml` files are no longer picked up automatically. Rename an existing `notes.yaml` to `notes.tnyml`, or open it once via File → Open with the "All Files" filter.
+- **Vitest 5** and **jsdom 30** for unit tests; 158 tests passing.
+- ESLint 10.10, Prettier 3.9.6, typescript-eslint 8.69, Playwright 1.63, lint-staged 17.5, js-yaml 5.4.1.
+- TypeScript stays on 6.0.3 and Vite on 7.3.6 until electron-vite and typescript-eslint support the next majors.
 
 ## Downloads (Windows)
 
