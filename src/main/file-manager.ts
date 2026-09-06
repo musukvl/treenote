@@ -82,7 +82,6 @@ export class FileManager {
       indent: 2,
       lineWidth: 120,
       noRefs: true,
-      sortKeys: false,
     });
 
     // Atomic write: write to temp file, then rename
