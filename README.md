@@ -32,7 +32,7 @@ No additional runtime or dependencies required — TreeNote is a self-contained 
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22.22.2+ (or 24.15+)
 - npm
 
 ### Install dependencies

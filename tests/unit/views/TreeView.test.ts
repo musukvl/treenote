@@ -394,9 +394,8 @@ describe('TreeView lifecycle cleanup', () => {
     // Access private fields via any cast to spy on dispose
     const controller = (treeView as unknown as { dragDropController: { dispose: () => void } })
       .dragDropController;
-    const modal = (
-      treeView as unknown as { deleteConfirmationModal: { dispose: () => void } }
-    ).deleteConfirmationModal;
+    const modal = (treeView as unknown as { deleteConfirmationModal: { dispose: () => void } })
+      .deleteConfirmationModal;
 
     const controllerDisposeSpy = vi.spyOn(controller, 'dispose');
     const modalDisposeSpy = vi.spyOn(modal, 'dispose');

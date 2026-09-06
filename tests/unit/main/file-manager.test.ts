@@ -47,6 +47,17 @@ describe('FileManager', () => {
     expect(value).toBeNull();
   });
 
+  it('should return null when reading an empty or whitespace-only file', async () => {
+    const fm = new FileManager(filePath);
+
+    await fm.ensureFileExists('');
+    expect(await fm.read()).toBeNull();
+
+    await rm(filePath);
+    await fm.ensureFileExists('  \n\t\n');
+    expect(await fm.read()).toBeNull();
+  });
+
   it('should write JSON as YAML and read it back as JSON string', async () => {
     const fm = new FileManager(filePath);
     const json = JSON.stringify({
