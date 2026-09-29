@@ -4,9 +4,16 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing Git tag to package for macOS (e.g. v1.0.9)'
+        required: true
+        type: string
 
 jobs:
   build-windows:
+    if: github.event_name == 'push'
     runs-on: windows-latest
     permissions:
       contents: write
@@ -41,3 +48,64 @@ jobs:
             dist/TreeNote [0-9]*.exe
           generate_release_notes: false
           body_path: RELEASE_NOTES.md
+
+  build-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.meta.outputs.tag }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+      - name: Package macOS DMG
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac dmg --universal --config electron-builder.yml
+
+      - name: Normalize DMG filename
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          EXPECTED="dist/TreeNote-${VERSION}.dmg"
+          FIRST_DMG="$(find dist -maxdepth 1 -type f -name '*.dmg' | sort | head -n 1)"
+          if [ -z "${FIRST_DMG}" ]; then
+            echo "No DMG found in dist/"
+            ls -la dist || true
+            exit 1
+          fi
+          if [ "${FIRST_DMG}" != "${EXPECTED}" ]; then
+            cp "${FIRST_DMG}" "${EXPECTED}"
+          fi
+          ls -la "${EXPECTED}"
+
+      - name: Upload macOS DMG
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.meta.outputs.tag }}
+          files: dist/TreeNote-*.dmg
+          fail_on_unmatched_files: true
+          generate_release_notes: false
